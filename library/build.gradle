@@ -1,8 +1,8 @@
-apply plugin: 'android-library'
+apply plugin: 'com.android.library'
 
 android {
-    compileSdkVersion 19
-    buildToolsVersion '19.0.0'
+    compileSdkVersion rootProject.ext.compileSdkVersion
+    buildToolsVersion rootProject.ext.buildToolsVersion
 
     sourceSets {
         main {
@@ -11,6 +11,9 @@ android {
             res.srcDirs = ['res']
         }
     }
-}
 
-apply from: 'https://raw.github.com/chrisbanes/gradle-mvn-push/eaa6b5404b7594e6c23b884fdc5795f545db55dd/gradle-mvn-push.gradle'
+    defaultConfig {
+        minSdkVersion 9
+        targetSdkVersion 20
+    }
+}
