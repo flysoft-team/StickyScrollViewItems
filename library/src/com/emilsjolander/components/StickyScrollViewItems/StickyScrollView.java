@@ -490,25 +490,11 @@ public class StickyScrollView extends ScrollView {
 	}
 
 	private void hideView(View v) {
-		if(Build.VERSION.SDK_INT>=11){
 			v.setAlpha(0);
-		}else{
-			AlphaAnimation anim = new AlphaAnimation(1, 0);
-			anim.setDuration(0);
-			anim.setFillAfter(true);
-			v.startAnimation(anim);
-		}
 	}
 
 	private void showView(View v) {
-		if(Build.VERSION.SDK_INT>=11){
 			v.setAlpha(1);
-		}else{
-			AlphaAnimation anim = new AlphaAnimation(0, 1);
-			anim.setDuration(0);
-			anim.setFillAfter(true);
-			v.startAnimation(anim);
-		}
 	}
 
 }
