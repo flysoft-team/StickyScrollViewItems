@@ -72,7 +72,7 @@ public class StickyScrollView extends ScrollView {
 				int b = (int) (getScrollY() + (currentlyStickingView.getHeight() + stickyViewTopOffset));
 				invalidate(l,t,r,b);
 			}
-			postDelayed(this, 16);
+			postOnAnimationDelayed(this,16);
 		}
 	};
 
@@ -393,7 +393,7 @@ public class StickyScrollView extends ScrollView {
 			hideView(currentlyStickingView);
 		}
 		if(((String)currentlyStickingView.getTag()).contains(FLAG_NONCONSTANT)){
-			post(invalidateRunnable);
+			postOnAnimation(invalidateRunnable);
 		}
 	}
 
@@ -401,6 +401,7 @@ public class StickyScrollView extends ScrollView {
 		if(getStringTagForView(currentlyStickingView).contains(FLAG_HASTRANSPARANCY)){
 			showView(currentlyStickingView);
 		}
+		currentlyStickingView.setTranslationY(0);
 		currentlyStickingView = null;
 		removeCallbacks(invalidateRunnable);
 	}
