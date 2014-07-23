@@ -1,20 +1,16 @@
 package com.emilsjolander.components.StickyScrollViewItems;
 
-import java.util.ArrayList;
-
 import android.content.Context;
 import android.content.res.TypedArray;
-import android.graphics.Canvas;
-import android.graphics.Point;
 import android.graphics.drawable.Drawable;
-import android.os.Build;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.ViewGroup;
-import android.view.animation.AlphaAnimation;
 import android.widget.ScrollView;
+
+import java.util.ArrayList;
 
 /**
  *
@@ -211,38 +207,6 @@ public class StickyScrollView extends ScrollView {
 		findStickyViews(child);
 	}
 
-	@Override
-	protected void dispatchDraw(Canvas canvas) {
-		super.dispatchDraw(canvas);
-		if(currentlyStickingView != null){
-			canvas.save();
-			canvas.translate(getPaddingLeft() + stickyViewLeftOffset, getScrollY() + stickyViewTopOffset + (clippingToPadding ? getPaddingTop() : 0));
-
-			canvas.clipRect(0, (clippingToPadding ? -stickyViewTopOffset : 0),
-          			getWidth() - stickyViewLeftOffset,
-          			currentlyStickingView.getHeight() + mShadowHeight + 1);
-
-      			if (mShadowDrawable != null) {
-        			int left = 0;
-        			int right = currentlyStickingView.getWidth();
-        			int top = currentlyStickingView.getHeight();
-        			int bottom = currentlyStickingView.getHeight() + mShadowHeight;
-        			mShadowDrawable.setBounds(left, top, right, bottom);
-        			mShadowDrawable.draw(canvas);
-      			}
-
-			canvas.clipRect(0, (clippingToPadding ? -stickyViewTopOffset : 0), getWidth(), currentlyStickingView.getHeight());
-			if(getStringTagForView(currentlyStickingView).contains(FLAG_HASTRANSPARANCY)){
-				showView(currentlyStickingView);
-				currentlyStickingView.draw(canvas);
-				hideView(currentlyStickingView);
-			}else{
-				currentlyStickingView.draw(canvas);
-			}
-			canvas.restore();
-		}
-	}
-
 	private int[] location = new int[2];
 
 	private MotionEvent getRelativeEvent(View v,MotionEvent original)
@@ -418,10 +382,19 @@ public class StickyScrollView extends ScrollView {
 		}else if(currentlyStickingView!=null){
 			stopStickingCurrentlyStickingView();
 		}
+
+		if (currentlyStickingView != null)
+		{
+			currentlyStickingView.setTranslationY((clippingToPadding ? 0 : getPaddingTop()) -
+					getTopForViewRelativeOnlyChild(currentlyStickingView) + getScrollY() );
+		}
 	}
 
 	private void startStickingView(View viewThatShouldStick) {
 		currentlyStickingView = viewThatShouldStick;
+		currentlyStickingView.bringToFront();
+		requestLayout();
+		invalidate();
 		if(getStringTagForView(currentlyStickingView).contains(FLAG_HASTRANSPARANCY)){
 			hideView(currentlyStickingView);
 		}
