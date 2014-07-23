@@ -171,7 +171,7 @@ public class StickyScrollView extends ScrollView {
 		if(!clipToPaddingHasBeenSet){
 			clippingToPadding = true;
 		}
-		notifyHierarchyChanged();
+//		notifyHierarchyChanged();
 	}
 
 	@Override
@@ -277,15 +277,21 @@ public class StickyScrollView extends ScrollView {
 			{
 				case MotionEvent.ACTION_DOWN:
 				{
-					startY = ev.getY();
+					startY = ev.getRawY();
 					interceptedEvents.add(getRelativeEvent(innerScrollableView,ev));
 					break;
 				}
 				case MotionEvent.ACTION_MOVE:
 				{
-					float y = ev.getY();
+					float y = ev.getRawY();
 					float deltaY = startY - y;
-					if (deltaY>0 && deltaY > touchSlop)
+					if (deltaY>0 && deltaY > touchSlop && innerScrollableView.canScrollVertically(1))
+					{
+						touchesToScrollable = true;
+
+						return true;
+					}
+					else if (deltaY<0 && deltaY < -touchSlop && innerScrollableView.canScrollVertically(0))
 					{
 						touchesToScrollable = true;
 
@@ -298,7 +304,7 @@ public class StickyScrollView extends ScrollView {
 				{
 					touchesToScrollable = false;
 					clearEvents();
-					return true;
+					return false;
 				}
 			}
 		}
