@@ -5,17 +5,19 @@ import java.util.ArrayList;
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.Canvas;
+import android.graphics.Point;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 import android.view.animation.AlphaAnimation;
 import android.widget.ScrollView;
 
 /**
- * 
+ *
  * @author Emil Sj�lander - sjolander.emil@gmail.com
  *
  */
@@ -35,7 +37,8 @@ public class StickyScrollView extends ScrollView {
 	 * Flag for views that have aren't fully opaque
 	 */
 	public static final String FLAG_HASTRANSPARANCY = "-hastransparancy";
-	
+	public static final String SCROLLABLE_TAG = "scrollable";
+
 	/**
 	 * Default height of the shadow peeking out below the stuck view.
 	 */
@@ -43,6 +46,10 @@ public class StickyScrollView extends ScrollView {
 
 	private ArrayList<View> stickyViews;
 	private View currentlyStickingView;
+	private View innerScrollableView;
+
+	private ArrayList<MotionEvent> interceptedEvents;
+
 	private float stickyViewTopOffset;
 	private int stickyViewLeftOffset;
 	private boolean redirectTouchesToStickyView;
@@ -51,6 +58,8 @@ public class StickyScrollView extends ScrollView {
 
 	private int mShadowHeight;
 	private Drawable mShadowDrawable;
+
+	private int touchSlop;
 
 	private final Runnable invalidateRunnable = new Runnable() {
 
@@ -79,7 +88,7 @@ public class StickyScrollView extends ScrollView {
 		super(context, attrs, defStyle);
 		setup();
 
-		
+
 
 		TypedArray a = context.obtainStyledAttributes(attrs,
 		        R.styleable.StickyScrollView, defStyle, 0);
@@ -111,12 +120,15 @@ public class StickyScrollView extends ScrollView {
 	public void setShadowHeight(int height) {
 		mShadowHeight = height;
 	}
-	
+
 
 	public void setup(){
 		stickyViews = new ArrayList<View>();
+		interceptedEvents = new ArrayList<MotionEvent>();
+		final ViewConfiguration configuration = ViewConfiguration.get(getContext());
+		touchSlop = configuration.getScaledTouchSlop();
 	}
-	
+
 	private int getLeftForViewRelativeOnlyChild(View v){
 		int left = v.getLeft();
 		while(v.getParent() != getChildAt(0)){
@@ -125,7 +137,7 @@ public class StickyScrollView extends ScrollView {
 		}
 		return left;
 	}
-	
+
 	private int getTopForViewRelativeOnlyChild(View v){
 		int top = v.getTop();
 		while(v.getParent() != getChildAt(0)){
@@ -134,7 +146,7 @@ public class StickyScrollView extends ScrollView {
 		}
 		return top;
 	}
-	
+
 	private int getRightForViewRelativeOnlyChild(View v){
 		int right = v.getRight();
 		while(v.getParent() != getChildAt(0)){
@@ -143,7 +155,7 @@ public class StickyScrollView extends ScrollView {
 		}
 		return right;
 	}
-	
+
 	private int getBottomForViewRelativeOnlyChild(View v){
 		int bottom = v.getBottom();
 		while(v.getParent() != getChildAt(0)){
@@ -231,6 +243,74 @@ public class StickyScrollView extends ScrollView {
 		}
 	}
 
+	private int[] location = new int[2];
+
+	private MotionEvent getRelativeEvent(View v,MotionEvent original)
+	{
+		MotionEvent relative = MotionEvent.obtain(original);
+		if (original.getX()==original.getRawX() && original.getY()==original.getRawY())
+		{
+			v.getLocationOnScreen(location);
+			relative.offsetLocation(-location[0],-location[1]);
+		}
+		return relative;
+	}
+
+	private float startY;
+
+	private boolean touchesToScrollable;
+
+	private void clearEvents()
+	{
+		for(MotionEvent event : interceptedEvents)
+		{
+			event.recycle();
+		}
+		interceptedEvents.clear();
+	}
+
+	@Override
+	public boolean onInterceptTouchEvent(MotionEvent ev) {
+		if (!canScrollVertically(1)) {
+			final int action = ev.getActionMasked();
+			switch (action)
+			{
+				case MotionEvent.ACTION_DOWN:
+				{
+					startY = ev.getY();
+					interceptedEvents.add(getRelativeEvent(innerScrollableView,ev));
+					break;
+				}
+				case MotionEvent.ACTION_MOVE:
+				{
+					float y = ev.getY();
+					float deltaY = startY - y;
+					if (deltaY>0 && deltaY > touchSlop)
+					{
+						touchesToScrollable = true;
+
+						return true;
+					}
+					break;
+				}
+				case MotionEvent.ACTION_UP:
+				case MotionEvent.ACTION_CANCEL:
+				{
+					touchesToScrollable = false;
+					clearEvents();
+					return true;
+				}
+			}
+		}
+		else
+		{
+			clearEvents();
+		}
+
+
+		return super.onInterceptTouchEvent(ev);
+	}
+
 	@Override
 	public boolean dispatchTouchEvent(MotionEvent ev) {
 		if(ev.getAction()==MotionEvent.ACTION_DOWN){
@@ -240,9 +320,9 @@ public class StickyScrollView extends ScrollView {
 		if(redirectTouchesToStickyView){
 			redirectTouchesToStickyView = currentlyStickingView != null;
 			if(redirectTouchesToStickyView){
-				redirectTouchesToStickyView = 
-					ev.getY()<=(currentlyStickingView.getHeight()+stickyViewTopOffset) && 
-					ev.getX() >= getLeftForViewRelativeOnlyChild(currentlyStickingView) && 
+				redirectTouchesToStickyView =
+					ev.getY()<=(currentlyStickingView.getHeight()+stickyViewTopOffset) &&
+					ev.getX() >= getLeftForViewRelativeOnlyChild(currentlyStickingView) &&
 					ev.getX() <= getRightForViewRelativeOnlyChild(currentlyStickingView);
 			}
 		}else if(currentlyStickingView == null){
@@ -258,25 +338,43 @@ public class StickyScrollView extends ScrollView {
 
 	@Override
 	public boolean onTouchEvent(MotionEvent ev) {
+		if (touchesToScrollable)
+		{
+			if (interceptedEvents.size() > 0)
+			{
+				for(MotionEvent event : interceptedEvents)
+				{
+					innerScrollableView.onTouchEvent(event);
+				}
+				clearEvents();
+			}
+			final int action = ev.getActionMasked();
+			if (action == MotionEvent.ACTION_CANCEL || action == MotionEvent.ACTION_UP)
+			{
+				touchesToScrollable = false;
+			}
+			return innerScrollableView.onTouchEvent(getRelativeEvent(innerScrollableView,ev));
+		}
+
 		if(redirectTouchesToStickyView){
 			ev.offsetLocation(0, ((getScrollY() + stickyViewTopOffset) - getTopForViewRelativeOnlyChild(currentlyStickingView)));
-		} 
-		
+		}
+
 		if(ev.getAction()==MotionEvent.ACTION_DOWN){
 			hasNotDoneActionDown = false;
 		}
-		
+
 		if(hasNotDoneActionDown){
 			MotionEvent down = MotionEvent.obtain(ev);
 			down.setAction(MotionEvent.ACTION_DOWN);
 			super.onTouchEvent(down);
 			hasNotDoneActionDown = false;
 		}
-		
+
 		if(ev.getAction()==MotionEvent.ACTION_UP || ev.getAction()==MotionEvent.ACTION_CANCEL){
 			hasNotDoneActionDown = true;
 		}
-		
+
 		return super.onTouchEvent(ev);
 	}
 
@@ -340,7 +438,7 @@ public class StickyScrollView extends ScrollView {
 	public void notifyStickyAttributeChanged(){
 		notifyHierarchyChanged();
 	}
-	
+
 	private void notifyHierarchyChanged(){
 		if(currentlyStickingView!=null){
 			stopStickingCurrentlyStickingView();
@@ -355,11 +453,17 @@ public class StickyScrollView extends ScrollView {
 		if(v instanceof ViewGroup){
 			ViewGroup vg = (ViewGroup)v;
 			for(int i = 0 ; i<vg.getChildCount() ; i++){
-				String tag = getStringTagForView(vg.getChildAt(i));
+				View child = vg.getChildAt(i);
+				String tag = getStringTagForView(child);
 				if(tag!=null && tag.contains(STICKY_TAG)){
-					stickyViews.add(vg.getChildAt(i));
-				}else if(vg.getChildAt(i) instanceof ViewGroup){
-					findStickyViews(vg.getChildAt(i));
+					stickyViews.add(child);
+				}
+				else if (tag != null && tag.contains(SCROLLABLE_TAG))
+				{
+					innerScrollableView = child;
+				}
+				else if(vg.getChildAt(i) instanceof ViewGroup){
+					findStickyViews(child);
 				}
 			}
 		}else{
@@ -367,9 +471,13 @@ public class StickyScrollView extends ScrollView {
 			if(tag!=null && tag.contains(STICKY_TAG)){
 				stickyViews.add(v);
 			}
+			else if (tag != null && tag.contains(SCROLLABLE_TAG))
+			{
+				innerScrollableView = v;
+			}
 		}
 	}
-	
+
 	private String getStringTagForView(View v){
 		Object tagObject = v.getTag();
 		return String.valueOf(tagObject);
