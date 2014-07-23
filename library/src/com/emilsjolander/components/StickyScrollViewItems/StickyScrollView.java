@@ -2,6 +2,10 @@ package com.emilsjolander.components.StickyScrollViewItems;
 
 import android.content.Context;
 import android.content.res.TypedArray;
+import android.graphics.Point;
+import android.graphics.PointF;
+import android.graphics.Rect;
+import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
@@ -209,6 +213,15 @@ public class StickyScrollView extends ScrollView {
 
 	private int[] location = new int[2];
 
+	private Rect locationRect = new Rect();
+
+	private void updateStickyOnScreenLocationRect()
+	{
+		currentlyStickingView.getLocationOnScreen(location);
+		locationRect.set(location[0],location[1],location[0] + currentlyStickingView.getWidth
+				(),location[1]+currentlyStickingView.getHeight());
+	}
+
 	private MotionEvent getRelativeEvent(View v,MotionEvent original)
 	{
 		MotionEvent relative = MotionEvent.obtain(original);
@@ -223,6 +236,7 @@ public class StickyScrollView extends ScrollView {
 	private float startY;
 
 	private boolean touchesToScrollable;
+	private boolean isRedirectTouchesToStickyView;
 
 	private void clearEvents()
 	{
@@ -235,12 +249,37 @@ public class StickyScrollView extends ScrollView {
 
 	@Override
 	public boolean onInterceptTouchEvent(MotionEvent ev) {
+
+		if (currentlyStickingView != null)
+		{
+			final int action = ev.getActionMasked();
+			if (action == MotionEvent.ACTION_DOWN)
+			{
+				updateStickyOnScreenLocationRect();
+				if (locationRect.contains((int)ev.getRawX(), (int) ev.getRawY()))
+				{
+					isRedirectTouchesToStickyView = true;
+					return false;
+				}
+			}
+			else if ((action == MotionEvent.ACTION_CANCEL || action == MotionEvent.ACTION_UP) && isRedirectTouchesToStickyView)
+			{
+				isRedirectTouchesToStickyView = false;
+				return false;
+			}
+			else if (isRedirectTouchesToStickyView)
+			{
+				return false;
+			}
+		}
+
 		if (!canScrollVertically(1)) {
 			final int action = ev.getActionMasked();
 			switch (action)
 			{
 				case MotionEvent.ACTION_DOWN:
 				{
+					clearEvents();
 					startY = ev.getRawY();
 					interceptedEvents.add(getRelativeEvent(innerScrollableView,ev));
 					break;
@@ -277,34 +316,8 @@ public class StickyScrollView extends ScrollView {
 			clearEvents();
 		}
 
-
 		return super.onInterceptTouchEvent(ev);
 	}
-
-	@Override
-	public boolean dispatchTouchEvent(MotionEvent ev) {
-		if(ev.getAction()==MotionEvent.ACTION_DOWN){
-			redirectTouchesToStickyView = true;
-		}
-
-		if(redirectTouchesToStickyView){
-			redirectTouchesToStickyView = currentlyStickingView != null;
-			if(redirectTouchesToStickyView){
-				redirectTouchesToStickyView =
-					ev.getY()<=(currentlyStickingView.getHeight()+stickyViewTopOffset) &&
-					ev.getX() >= getLeftForViewRelativeOnlyChild(currentlyStickingView) &&
-					ev.getX() <= getRightForViewRelativeOnlyChild(currentlyStickingView);
-			}
-		}else if(currentlyStickingView == null){
-			redirectTouchesToStickyView = false;
-		}
-		if(redirectTouchesToStickyView){
-			ev.offsetLocation(0, -1*((getScrollY() + stickyViewTopOffset) - getTopForViewRelativeOnlyChild(currentlyStickingView)));
-		}
-		return super.dispatchTouchEvent(ev);
-	}
-
-	private boolean hasNotDoneActionDown = true;
 
 	@Override
 	public boolean onTouchEvent(MotionEvent ev) {
@@ -324,25 +337,6 @@ public class StickyScrollView extends ScrollView {
 				touchesToScrollable = false;
 			}
 			return innerScrollableView.onTouchEvent(getRelativeEvent(innerScrollableView,ev));
-		}
-
-		if(redirectTouchesToStickyView){
-			ev.offsetLocation(0, ((getScrollY() + stickyViewTopOffset) - getTopForViewRelativeOnlyChild(currentlyStickingView)));
-		}
-
-		if(ev.getAction()==MotionEvent.ACTION_DOWN){
-			hasNotDoneActionDown = false;
-		}
-
-		if(hasNotDoneActionDown){
-			MotionEvent down = MotionEvent.obtain(ev);
-			down.setAction(MotionEvent.ACTION_DOWN);
-			super.onTouchEvent(down);
-			hasNotDoneActionDown = false;
-		}
-
-		if(ev.getAction()==MotionEvent.ACTION_UP || ev.getAction()==MotionEvent.ACTION_CANCEL){
-			hasNotDoneActionDown = true;
 		}
 
 		return super.onTouchEvent(ev);
