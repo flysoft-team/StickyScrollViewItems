@@ -354,9 +354,9 @@ public class StickyScrollView extends ScrollView {
 		currentlyStickingView.bringToFront();
 		requestLayout();
 		invalidate();
-		if (((String) currentlyStickingView.getTag()).contains(FLAG_NONCONSTANT)) {
-			postOnAnimation(invalidateRunnable);
-		}
+//		if (((String) currentlyStickingView.getTag()).contains(FLAG_NONCONSTANT)) {
+//			postOnAnimation(invalidateRunnable);
+//		}
 	}
 
 	private void stopStickingCurrentlyStickingView() {
