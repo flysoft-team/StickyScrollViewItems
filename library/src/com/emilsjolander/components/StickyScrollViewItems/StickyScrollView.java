@@ -105,6 +105,16 @@ public class StickyScrollView extends ScrollView {
 
 	}
 
+	public void setStickyViewId(int stickyViewId) {
+		this.stickyViewId = stickyViewId;
+		findStickyViews();
+	}
+
+	public void setScrollableViewId(int scrollableViewId) {
+		this.scrollableViewId = scrollableViewId;
+		findStickyViews();
+	}
+
 	/**
 	 * Sets the height of the shadow drawable in pixels.
 	 *
