@@ -5,7 +5,6 @@
         <attr name="stuckShadowHeight" format="dimension" />
         <attr name="stuckShadowDrawable" format="reference" />
         <attr name="stickyView" format="reference" />
-        <attr name="scrollableView" format="reference" />
     </declare-styleable>
 
 </resources>

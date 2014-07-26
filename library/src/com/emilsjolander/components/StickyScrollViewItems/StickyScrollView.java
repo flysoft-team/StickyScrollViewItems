@@ -19,16 +19,6 @@ import java.util.ArrayList;
 public class StickyScrollView extends ScrollView {
 
 	/**
-	 * Flag for views that should stick and have non-constant drawing. e.g. Buttons, ProgressBars etc
-	 */
-	public static final String FLAG_NONCONSTANT = "-nonconstant";
-
-	/**
-	 * Flag for views that have aren't fully opaque
-	 */
-	public static final String FLAG_HASTRANSPARANCY = "-hastransparancy";
-
-	/**
 	 * Default height of the shadow peeking out below the stuck view.
 	 */
 	private static final int DEFAULT_SHADOW_HEIGHT = 10; // dp;
@@ -48,24 +38,8 @@ public class StickyScrollView extends ScrollView {
 	private Drawable mShadowDrawable;
 
 	private int stickyViewId;
-	private int scrollableViewId;
 
 	private int touchSlop;
-
-	private final Runnable invalidateRunnable = new Runnable() {
-
-		@Override
-		public void run() {
-			if (currentlyStickingView != null) {
-				int l = getLeftForViewRelativeOnlyChild(currentlyStickingView);
-				int t = getBottomForViewRelativeOnlyChild(currentlyStickingView);
-				int r = getRightForViewRelativeOnlyChild(currentlyStickingView);
-				int b = (int) (getScrollY() + (currentlyStickingView.getHeight() + stickyViewTopOffset));
-				invalidate(l, t, r, b);
-			}
-			postOnAnimationDelayed(this, 16);
-		}
-	};
 
 	public StickyScrollView(Context context) {
 		this(context, null);
@@ -99,7 +73,6 @@ public class StickyScrollView extends ScrollView {
 		}
 
 		stickyViewId = a.getResourceId(R.styleable.StickyScrollView_stickyView, 0);
-		scrollableViewId = a.getResourceId(R.styleable.StickyScrollView_scrollableView, 0);
 
 		a.recycle();
 
@@ -107,11 +80,6 @@ public class StickyScrollView extends ScrollView {
 
 	public void setStickyViewId(int stickyViewId) {
 		this.stickyViewId = stickyViewId;
-		findStickyViews();
-	}
-
-	public void setScrollableViewId(int scrollableViewId) {
-		this.scrollableViewId = scrollableViewId;
 		findStickyViews();
 	}
 
@@ -126,7 +94,7 @@ public class StickyScrollView extends ScrollView {
 
 
 	public void setup() {
-		interceptedEvents = new ArrayList<MotionEvent>();
+		interceptedEvents = new ArrayList<>();
 		final ViewConfiguration configuration = ViewConfiguration.get(getContext());
 		touchSlop = configuration.getScaledTouchSlop();
 	}
@@ -233,6 +201,9 @@ public class StickyScrollView extends ScrollView {
 	}
 
 	private float startY;
+	private float startX;
+	private float startYRelative;
+	private float startXRelative;
 
 	private boolean touchesToScrollable;
 	private boolean isRedirectTouchesToStickyView;
@@ -269,20 +240,34 @@ public class StickyScrollView extends ScrollView {
 				case MotionEvent.ACTION_DOWN: {
 					clearEvents();
 					startY = ev.getRawY();
+					startX = ev.getRawX();
+					startYRelative = ev.getY();
+					startXRelative = ev.getX();
 					interceptedEvents.add(getRelativeEvent(innerScrollableView, ev));
 					break;
 				}
 				case MotionEvent.ACTION_MOVE: {
 					float y = ev.getRawY();
 					float deltaY = startY - y;
-					if (deltaY > 0 && deltaY > touchSlop && innerScrollableView.canScrollVertically(1)) {
-						touchesToScrollable = true;
+					if (deltaY > 0 && deltaY > touchSlop) {
+						innerScrollableView = canScroll(this,false,1,(int)startXRelative,
+								(int)startYRelative);
+						if (innerScrollableView != null)
+						{
+							touchesToScrollable = true;
 
-						return true;
-					} else if (deltaY < 0 && deltaY < -touchSlop && innerScrollableView.canScrollVertically(0)) {
-						touchesToScrollable = true;
+							return true;
+						}
 
-						return true;
+					} else if (deltaY < 0 && deltaY < -touchSlop) {
+						innerScrollableView = canScroll(this,false,0,(int)startXRelative,
+								(int)startYRelative);
+						if (innerScrollableView != null)
+						{
+							touchesToScrollable = true;
+
+							return true;
+						}
 					}
 					break;
 				}
@@ -317,6 +302,31 @@ public class StickyScrollView extends ScrollView {
 		}
 
 		return super.onTouchEvent(ev);
+	}
+
+	protected View canScroll(View v, boolean checkV, int direction, int x, int y) {
+		if (v instanceof ViewGroup) {
+			final ViewGroup group = (ViewGroup) v;
+			final int scrollX = v.getScrollX();
+			final int scrollY = v.getScrollY();
+			final int count = group.getChildCount();
+			// Count backwards - let topmost views consume scroll distance first.
+			for (int i = count - 1; i >= 0; i--) {
+				// This will not work for transformed views in Honeycomb+
+				final View child = group.getChildAt(i);
+				if (x + scrollX >= child.getLeft() && x + scrollX < child.getRight() &&
+						y + scrollY >= child.getTop() && y + scrollY < child.getBottom()
+						) {
+					View view = canScroll(child, true, direction, x + scrollX - child.getLeft(),
+							y + scrollY - child.getTop());
+					if (view != null) {
+						return view;
+					}
+				}
+			}
+		}
+		boolean canScroll = checkV && v.canScrollVertically(direction);
+		return canScroll ? v : null;
 	}
 
 	@Override
@@ -364,15 +374,11 @@ public class StickyScrollView extends ScrollView {
 		currentlyStickingView.bringToFront();
 		requestLayout();
 		invalidate();
-//		if (((String) currentlyStickingView.getTag()).contains(FLAG_NONCONSTANT)) {
-//			postOnAnimation(invalidateRunnable);
-//		}
 	}
 
 	private void stopStickingCurrentlyStickingView() {
 		currentlyStickingView.setTranslationY(0);
 		currentlyStickingView = null;
-		removeCallbacks(invalidateRunnable);
 	}
 
 	/**
@@ -394,15 +400,5 @@ public class StickyScrollView extends ScrollView {
 
 	private void findStickyViews() {
 		stickyView = findViewById(stickyViewId);
-		innerScrollableView = findViewById(scrollableViewId);
 	}
-
-	private void hideView(View v) {
-		v.setAlpha(0);
-	}
-
-	private void showView(View v) {
-		v.setAlpha(1);
-	}
-
 }
