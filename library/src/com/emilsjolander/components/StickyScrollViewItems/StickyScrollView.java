@@ -9,8 +9,12 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.ViewGroup;
+import android.widget.AbsListView;
+import android.widget.AdapterView;
+import android.widget.OverScroller;
 import android.widget.ScrollView;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 
 /**
@@ -40,6 +44,9 @@ public class StickyScrollView extends ScrollView {
 	private int stickyViewId;
 
 	private int touchSlop;
+
+	private boolean isBeenDragged;
+	private OverScroller scroller;
 
 	public StickyScrollView(Context context) {
 		this(context, null);
@@ -97,6 +104,20 @@ public class StickyScrollView extends ScrollView {
 		interceptedEvents = new ArrayList<>();
 		final ViewConfiguration configuration = ViewConfiguration.get(getContext());
 		touchSlop = configuration.getScaledTouchSlop();
+
+		try {
+
+			Class clazz = ScrollView.class;
+			Field field = clazz.getDeclaredField("mIsBeingDragged");
+			field.setAccessible(true);
+			isBeenDragged = field.getBoolean(this);
+
+			field = clazz.getDeclaredField("mScroller");
+			field.setAccessible(true);
+			scroller = (OverScroller) field.get(this);
+		}
+		catch (NoSuchFieldException | IllegalAccessException e)
+		{}
 	}
 
 	private int getLeftForViewRelativeOnlyChild(View v) {
@@ -217,7 +238,8 @@ public class StickyScrollView extends ScrollView {
 
 	@Override
 	public boolean onInterceptTouchEvent(MotionEvent ev) {
-
+		fliingStarted = false;
+		setOverScrollMode(View.OVER_SCROLL_ALWAYS);
 		if (currentlyStickingView != null) {
 			final int action = ev.getActionMasked();
 			if (action == MotionEvent.ACTION_DOWN) {
@@ -333,6 +355,11 @@ public class StickyScrollView extends ScrollView {
 	protected void onScrollChanged(int l, int t, int oldl, int oldt) {
 		super.onScrollChanged(l, t, oldl, oldt);
 		doTheStickyThing();
+		if (!isBeenDragged)
+		{
+			doTheFlyingThing(t,oldt);
+		}
+
 	}
 
 	private void doTheStickyThing() {
@@ -366,6 +393,30 @@ public class StickyScrollView extends ScrollView {
 		if (currentlyStickingView != null) {
 			currentlyStickingView.setTranslationY((clippingToPadding ? 0 : getPaddingTop()) -
 					getTopForViewRelativeOnlyChild(currentlyStickingView) + getScrollY());
+		}
+	}
+
+	private boolean fliingStarted = false;
+
+	private void doTheFlyingThing(int top,int oldTop)
+	{
+		if (top > oldTop && ! fliingStarted)
+		{
+			if (!canScrollVertically(1))
+			{
+				View scrollableView = canScroll(this,false,1,getWidth()/2,getHeight()/2);
+				if (scrollableView != null)
+				{
+					if (scrollableView instanceof AdapterView)
+					{
+						final AbsListView adapterView = (AbsListView) scrollableView;
+						float currentVelocity = scroller.getCurrVelocity();
+						adapterView.smoothScrollBy((int)currentVelocity/3,(int) (currentVelocity/8));
+						fliingStarted = true;
+						setOverScrollMode(View.OVER_SCROLL_NEVER);
+					}
+				}
+			}
 		}
 	}
 
