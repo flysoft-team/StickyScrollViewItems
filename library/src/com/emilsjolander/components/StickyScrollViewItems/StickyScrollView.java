@@ -17,6 +17,7 @@ import android.widget.ScrollView;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author Emil Sj�lander - sjolander.emil@gmail.com
@@ -121,9 +122,8 @@ public class StickyScrollView extends ScrollView implements StickyInnerScrollabl
 			field = clazz.getDeclaredField("mScroller");
 			field.setAccessible(true);
 			scroller = (OverScroller) field.get(this);
+		} catch (NoSuchFieldException | IllegalAccessException e) {
 		}
-		catch (NoSuchFieldException | IllegalAccessException e)
-		{}
 	}
 
 	private int getLeftForViewRelativeOnlyChild(View v) {
@@ -244,9 +244,8 @@ public class StickyScrollView extends ScrollView implements StickyInnerScrollabl
 
 	@Override
 	public boolean onInterceptTouchEvent(MotionEvent ev) {
-		fliingStarted = false;
-		if (innerScrollableView !=null)
-		{
+		flingStarted = false;
+		if (innerScrollableView != null) {
 			innerScrollableView.setStickyInnerScrollableListener(null);
 			innerScrollableView = null;
 		}
@@ -276,7 +275,6 @@ public class StickyScrollView extends ScrollView implements StickyInnerScrollabl
 					startX = ev.getRawX();
 					startYRelative = ev.getY();
 					startXRelative = ev.getX();
-//					interceptedEvents.add(getRelativeEvent(innerScrollableView, ev));
 					interceptedEvents.add(MotionEvent.obtain(ev));
 					break;
 				}
@@ -284,21 +282,19 @@ public class StickyScrollView extends ScrollView implements StickyInnerScrollabl
 					float y = ev.getRawY();
 					float deltaY = startY - y;
 					if (deltaY > 0 && deltaY > touchSlop) {
-						innerScrollableView = canScroll(this,false,1,(int)startXRelative,
-								(int)startYRelative);
-						Log.d(TAG,"touch detected");
-						if (innerScrollableView != null)
-						{
+						innerScrollableView = canScroll(this, false, 1, (int) startXRelative,
+								(int) startYRelative);
+						Log.d(TAG, "touch detected");
+						if (innerScrollableView != null) {
 							touchesToScrollable = true;
-							Log.d(TAG,"touch accepted");
+							Log.d(TAG, "touch accepted");
 							return true;
 						}
 
 					} else if (deltaY < 0 && deltaY < -touchSlop) {
-						innerScrollableView = canScroll(this,false,-1,(int)startXRelative,
-								(int)startYRelative);
-						if (innerScrollableView != null)
-						{
+						innerScrollableView = canScroll(this, false, -1, (int) startXRelative,
+								(int) startYRelative);
+						if (innerScrollableView != null) {
 							touchesToScrollable = true;
 							innerScrollableView.setStickyInnerScrollableListener(this);
 							return true;
@@ -309,12 +305,6 @@ public class StickyScrollView extends ScrollView implements StickyInnerScrollabl
 				case MotionEvent.ACTION_UP:
 				case MotionEvent.ACTION_CANCEL: {
 					touchesToScrollable = false;
-//					if (innerScrollableView != null)
-//					{
-//						innerScrollableView.setStickyInnerScrollableListener(null);
-//						innerScrollableView = null;
-//					}
-
 					clearEvents();
 					return false;
 				}
@@ -329,7 +319,7 @@ public class StickyScrollView extends ScrollView implements StickyInnerScrollabl
 	@Override
 	public boolean onTouchEvent(MotionEvent ev) {
 		if (touchesToScrollable) {
-			Log.d(TAG,"touch to scrollable");
+			Log.d(TAG, "touch to scrollable");
 			if (interceptedEvents.size() > 0) {
 				for (MotionEvent event : interceptedEvents) {
 					innerScrollableView.getListView().onTouchEvent(event);
@@ -338,14 +328,9 @@ public class StickyScrollView extends ScrollView implements StickyInnerScrollabl
 			}
 			final int action = ev.getActionMasked();
 			if (action == MotionEvent.ACTION_CANCEL || action == MotionEvent.ACTION_UP) {
-				boolean handled =innerScrollableView.getListView().onTouchEvent(getRelativeEvent
+				boolean handled = innerScrollableView.getListView().onTouchEvent(getRelativeEvent
 						(innerScrollableView, ev));
 				touchesToScrollable = false;
-//				if (innerScrollableView != null)
-//				{
-//					innerScrollableView.setStickyInnerScrollableListener(null);
-//					innerScrollableView = null;
-//				}
 				return handled;
 			}
 			return innerScrollableView.getListView().onTouchEvent(getRelativeEvent(innerScrollableView, ev));
@@ -375,22 +360,21 @@ public class StickyScrollView extends ScrollView implements StickyInnerScrollabl
 				}
 			}
 		}
-//		boolean canScroll = v instanceof StickyInnerScrollableView && checkV && v.canScrollVertically(direction);
-		boolean canScroll = false;
-		if (v instanceof  StickyInnerScrollableView)
-		{
-			canScroll = checkV && v.canScrollVertically(direction);
-		}
-		return canScroll ? (StickyInnerScrollableView)v : null;
+		boolean canScroll = v instanceof StickyInnerScrollableView && checkV && v.canScrollVertically(direction);
+//		boolean canScroll = false;
+//		if (v instanceof  StickyInnerScrollableView)
+//		{
+//			canScroll = checkV && v.canScrollVertically(direction);
+//		}
+		return canScroll ? (StickyInnerScrollableView) v : null;
 	}
 
 	@Override
 	protected void onScrollChanged(int l, int t, int oldl, int oldt) {
 		super.onScrollChanged(l, t, oldl, oldt);
 		doTheStickyThing();
-		if (!isBeenDragged)
-		{
-			doTheFlyingThing(t,oldt);
+		if (!isBeenDragged) {
+			doTheFlyingThing(t, oldt);
 		}
 	}
 
@@ -429,26 +413,20 @@ public class StickyScrollView extends ScrollView implements StickyInnerScrollabl
 		}
 	}
 
-	private boolean fliingStarted = false;
+	private boolean flingStarted = false;
 
-	private void doTheFlyingThing(int top,int oldTop)
-	{
-		if (top > oldTop && ! fliingStarted)
-		{
-			if (!canScrollVertically(1))
-			{
-				StickyInnerScrollableView scrollableView = canScroll(this,false,1,getWidth()/2,getHeight()/2);
-				if (scrollableView != null)
-				{
-					if (scrollableView instanceof AdapterView)
-					{
+	private void doTheFlyingThing(int top, int oldTop) {
+		if (top > oldTop && !flingStarted) {
+			if (!canScrollVertically(1)) {
+				StickyInnerScrollableView scrollableView = canScroll(this, false, 1, getWidth() / 2, getHeight() / 2);
+				if (scrollableView != null) {
+					if (scrollableView instanceof AdapterView) {
 						final AbsListView adapterView = (AbsListView) scrollableView;
 						float currentVelocity = scroller.getCurrVelocity();
-//						adapterView.smoothScrollBy((int)currentVelocity/8,250);
-						adapterView.smoothScrollBy( scrollerHelper.getSplineFlingDistance((int)
+						adapterView.smoothScrollBy(scrollerHelper.getSplineFlingDistance((int)
 								currentVelocity)
-								,scrollerHelper.getSplineFlingDuration((int) currentVelocity));
-						fliingStarted = true;
+								, scrollerHelper.getSplineFlingDuration((int) currentVelocity));
+						flingStarted = true;
 						setOverScrollMode(View.OVER_SCROLL_NEVER);
 					}
 				}
@@ -458,16 +436,12 @@ public class StickyScrollView extends ScrollView implements StickyInnerScrollabl
 
 
 	@Override
-	public void onFliing(View v, int t, int oldT, float velocity) {
-		Log.d(TAG,"fliing t " + Integer.toString(t) + " oldT " + Integer.toString(oldT));
-		if (t<=oldT && t == 0 && !fliingStarted)
-		{
-
-			if (!canScrollVertically(1))
-			{
-				if (!v.canScrollVertically(-1))
-				{
-					Log.d(TAG,"start smooth scroll on " + Integer.toString(t) + " on velo " + Float
+	public void onFling(View v, int t, int oldT, float velocity) {
+		Log.d(TAG, "fling t " + Integer.toString(t) + " oldT " + Integer.toString(oldT));
+		if (t <= oldT && t == 0 && !flingStarted) {
+			if (!canScrollVertically(1)) {
+				if (!v.canScrollVertically(-1)) {
+					Log.d(TAG, "start smooth scroll on " + Integer.toString(t) + " on velo " + Float
 							.toString(velocity));
 					int distance = scrollerHelper.getSplineFlingDistance((int)
 							-velocity);
@@ -478,10 +452,10 @@ public class StickyScrollView extends ScrollView implements StickyInnerScrollabl
 					int dy = Math.max(0, Math.min(scrollY + distance, maxY)) - scrollY;
 					int duration = scrollerHelper.getSplineFlingDuration
 							((int) velocity);
-					scroller.startScroll(getScrollX(), scrollY, 0, dy,duration);
-					Log.d(TAG,"started distance " + Integer.toString(dy) + " duration " + Integer.toString(duration));
+					scroller.startScroll(getScrollX(), scrollY, 0, dy, duration);
+					Log.d(TAG, "started distance " + Integer.toString(dy) + " duration " + Integer.toString(duration));
 					postInvalidateOnAnimation();
-					fliingStarted = true;
+					flingStarted = true;
 				}
 			}
 		}
@@ -518,5 +492,32 @@ public class StickyScrollView extends ScrollView implements StickyInnerScrollabl
 
 	private void findStickyViews() {
 		stickyView = findViewById(stickyViewId);
+	}
+
+	private void findInnerScrollables(View v, List<StickyInnerScrollableView> scrollables, boolean checkThis) {
+		if (checkThis && v instanceof StickyInnerScrollableView) {
+			scrollables.add((StickyInnerScrollableView) v);
+			return;
+		} else if (v instanceof ViewGroup) {
+			ViewGroup viewGroup = (ViewGroup) v;
+			int childrenCount = viewGroup.getChildCount();
+			for (int i = 0; i < childrenCount; ++i) {
+				View child = viewGroup.getChildAt(i);
+				findInnerScrollables(child, scrollables, true);
+			}
+		}
+	}
+
+	public void syncInnerScrollables() {
+		if (canScrollVertically(1))
+		{
+			List<StickyInnerScrollableView> scrollables = new ArrayList<>();
+			findInnerScrollables(this, scrollables, false);
+			for(StickyInnerScrollableView scrollableView : scrollables)
+			{
+				scrollableView.scrollToTop();
+			}
+		}
+
 	}
 }

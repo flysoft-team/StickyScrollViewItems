@@ -14,4 +14,6 @@ public interface StickyInnerScrollableView {
 
 	public void getLocationOnScreen(int[] location);
 
+	public void scrollToTop();
+
 }
