@@ -286,15 +286,16 @@ public class StickyScrollView extends ScrollView implements StickyInnerScrollabl
 					if (deltaY > 0 && deltaY > touchSlop) {
 						innerScrollableView = canScroll(this,false,1,(int)startXRelative,
 								(int)startYRelative);
+						Log.d(TAG,"touch detected");
 						if (innerScrollableView != null)
 						{
 							touchesToScrollable = true;
-
+							Log.d(TAG,"touch accepted");
 							return true;
 						}
 
 					} else if (deltaY < 0 && deltaY < -touchSlop) {
-						innerScrollableView = canScroll(this,false,0,(int)startXRelative,
+						innerScrollableView = canScroll(this,false,-1,(int)startXRelative,
 								(int)startYRelative);
 						if (innerScrollableView != null)
 						{
@@ -328,6 +329,7 @@ public class StickyScrollView extends ScrollView implements StickyInnerScrollabl
 	@Override
 	public boolean onTouchEvent(MotionEvent ev) {
 		if (touchesToScrollable) {
+			Log.d(TAG,"touch to scrollable");
 			if (interceptedEvents.size() > 0) {
 				for (MotionEvent event : interceptedEvents) {
 					innerScrollableView.getListView().onTouchEvent(event);
@@ -373,7 +375,12 @@ public class StickyScrollView extends ScrollView implements StickyInnerScrollabl
 				}
 			}
 		}
-		boolean canScroll = v instanceof StickyInnerScrollableView && checkV && v.canScrollVertically(direction);
+//		boolean canScroll = v instanceof StickyInnerScrollableView && checkV && v.canScrollVertically(direction);
+		boolean canScroll = false;
+		if (v instanceof  StickyInnerScrollableView)
+		{
+			canScroll = checkV && v.canScrollVertically(direction);
+		}
 		return canScroll ? (StickyInnerScrollableView)v : null;
 	}
 
@@ -385,10 +392,7 @@ public class StickyScrollView extends ScrollView implements StickyInnerScrollabl
 		{
 			doTheFlyingThing(t,oldt);
 		}
-
 	}
-
-
 
 
 	private void doTheStickyThing() {
@@ -461,7 +465,7 @@ public class StickyScrollView extends ScrollView implements StickyInnerScrollabl
 
 			if (!canScrollVertically(1))
 			{
-				if (!v.canScrollVertically(0))
+				if (!v.canScrollVertically(-1))
 				{
 					Log.d(TAG,"start smooth scroll on " + Integer.toString(t) + " on velo " + Float
 							.toString(velocity));
