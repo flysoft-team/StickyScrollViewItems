@@ -5,7 +5,6 @@ import android.content.res.TypedArray;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
@@ -56,6 +55,7 @@ public class StickyScrollView extends ScrollView implements StickyInnerScrollabl
 	private ScrollerHelper scrollerHelper;
 
 	private MotionEvent lastMotionEvent;
+	private MotionEvent needToHandleEvent;
 
 	private float startY;
 	private float startX;
@@ -65,6 +65,7 @@ public class StickyScrollView extends ScrollView implements StickyInnerScrollabl
 
 	private boolean forwardTouchesToScrollable;
 	private boolean redirectTouchesToScrollable;
+	private boolean forwardTouchesFromScrollable;
 
 	public StickyScrollView(Context context) {
 		this(context, null);
@@ -269,7 +270,7 @@ public class StickyScrollView extends ScrollView implements StickyInnerScrollabl
 				return false;
 			}
 		}
-
+		catchMotionEvent(ev);
 		if (!canScrollVertically(1)) {
 			final int action = ev.getActionMasked();
 			switch (action) {
@@ -288,10 +289,8 @@ public class StickyScrollView extends ScrollView implements StickyInnerScrollabl
 					if (deltaY > 0 && deltaY > touchSlop) {
 						innerScrollableView = canScroll(this, false, 1, (int) startXRelative,
 								(int) startYRelative);
-						Log.d(TAG, "touch detected");
 						if (innerScrollableView != null) {
 							redirectTouchesToScrollable = true;
-							Log.d(TAG, "touch accepted");
 							return true;
 						}
 
@@ -316,16 +315,14 @@ public class StickyScrollView extends ScrollView implements StickyInnerScrollabl
 		} else {
 			clearEvents(interceptedEvents);
 		}
-		if (!forwardTouchesToScrollable) {
-			lastMotionEvent = MotionEvent.obtain(ev);
-		}
+
 
 		return super.onInterceptTouchEvent(ev);
 	}
 
 	@Override
 	public boolean onTouchEvent(MotionEvent ev) {
-
+		catchMotionEvent(ev);
 		if (redirectTouchesToScrollable) {
 			if (interceptedEvents.size() > 0) {
 				for (MotionEvent event : interceptedEvents) {
@@ -336,49 +333,65 @@ public class StickyScrollView extends ScrollView implements StickyInnerScrollabl
 
 			return dispatchTouch(ev);
 		} else if (forwardTouchesToScrollable) {
-			if (lastMotionEvent != null) {
+			if (needToHandleEvent != null) {
 				innerScrollableView.getListView().onTouchEvent(
-						lastMotionEvent);
-				lastMotionEvent.recycle();
-				lastMotionEvent = null;
+						needToHandleEvent);
+				needToHandleEvent.recycle();
+				needToHandleEvent = null;
 			}
 
+			return dispatchTouch(ev);
+		} else if (forwardTouchesFromScrollable) {
+			if (needToHandleEvent != null)
+			{
+				super.onTouchEvent(needToHandleEvent);
+				needToHandleEvent.recycle();
+				needToHandleEvent = null;
+			}
 			return dispatchTouch(ev);
 		}
 
 		final int action = ev.getActionMasked();
 		if (action == MotionEvent.ACTION_CANCEL || action == MotionEvent.ACTION_UP) {
-			if (!forwardTouchesToScrollable) {
-				lastMotionEvent.recycle();
-				lastMotionEvent = null;
-				forwardTouchesToScrollable = false;
+			if (needToHandleEvent != null) {
+				needToHandleEvent.recycle();
+				needToHandleEvent = null;
 			}
+			forwardTouchesToScrollable = false;
+			forwardTouchesFromScrollable = false;
 
-		} else {
-			if (!forwardTouchesToScrollable) {
-				lastMotionEvent = MotionEvent.obtain(ev);
-			}
 		}
 
 
 		return super.onTouchEvent(ev);
 	}
 
+	private void catchMotionEvent(MotionEvent event) {
+//		if (!(forwardTouchesToScrollable || forwardTouchesFromScrollable)) {
+			if (lastMotionEvent != null) {
+				lastMotionEvent.recycle();
+			}
+			lastMotionEvent = MotionEvent.obtain(event);
+//		}
+	}
+
 	private boolean dispatchTouch(MotionEvent event) {
-		if (innerScrollableView == null) {
-			return false;
-		}
 		boolean handled = false;
-		if (redirectTouchesToScrollable) {
+		if (redirectTouchesToScrollable && innerScrollableView !=null) {
 			handled = innerScrollableView.getListView().onTouchEvent(getRelativeEvent(innerScrollableView,
 					event));
-		} else if (forwardTouchesToScrollable) {
+		} else if (forwardTouchesToScrollable && innerScrollableView !=null) {
 			handled = innerScrollableView.getListView().onTouchEvent(event);
+		}
+		else if (forwardTouchesFromScrollable)
+		{
+			handled = super.onTouchEvent(event);
 		}
 		final int action = event.getActionMasked();
 		if (action == MotionEvent.ACTION_CANCEL || action == MotionEvent.ACTION_UP) {
 			forwardTouchesToScrollable = false;
-			redirectTouchesToScrollable= false;
+			redirectTouchesToScrollable = false;
+			forwardTouchesFromScrollable = false;
 		}
 
 		return handled;
@@ -428,11 +441,15 @@ public class StickyScrollView extends ScrollView implements StickyInnerScrollabl
 					if (scrollableView != null) {
 						innerScrollableView = scrollableView;
 						forwardTouchesToScrollable = true;
+						forwardTouchesFromScrollable = false;
+						redirectTouchesToScrollable = false;
 						MotionEvent nEvent = MotionEvent.obtain(lastMotionEvent.getDownTime(), lastMotionEvent.getEventTime(),
 								MotionEvent.ACTION_DOWN, lastMotionEvent.getX(), lastMotionEvent.getY(),
 								lastMotionEvent.getMetaState());
-						lastMotionEvent.recycle();
-						lastMotionEvent = nEvent;
+						if (needToHandleEvent != null) {
+							needToHandleEvent.recycle();
+						}
+						needToHandleEvent = nEvent;
 //						setOverScrollMode(View.OVER_SCROLL_NEVER);
 					}
 				}
@@ -506,7 +523,7 @@ public class StickyScrollView extends ScrollView implements StickyInnerScrollabl
 
 
 	@Override
-	public void onFling(View v, int t, int oldT, float velocity) {
+	public void onScrollableFling(View v, int t, int oldT, float velocity) {
 		if (t <= oldT && t == 0 && !flingStarted) {
 			if (!canScrollVertically(1)) {
 				if (!v.canScrollVertically(-1)) {
@@ -522,6 +539,31 @@ public class StickyScrollView extends ScrollView implements StickyInnerScrollabl
 					scroller.startScroll(getScrollX(), scrollY, 0, dy, duration);
 					postInvalidateOnAnimation();
 					flingStarted = true;
+				}
+			}
+		}
+	}
+
+	@Override
+	public void onScrollableScroll(View v, int t, int oldT) {
+		if (t <= oldT && t == 0) {
+			if (!canScrollVertically(1)) {
+				if (!v.canScrollVertically(-1)) {
+					forwardTouchesFromScrollable = true;
+					forwardTouchesToScrollable = false;
+					redirectTouchesToScrollable= false;
+					MotionEvent nEvent = MotionEvent.obtain(lastMotionEvent.getDownTime(), lastMotionEvent.getEventTime(),
+							MotionEvent.ACTION_CANCEL, lastMotionEvent.getX(), lastMotionEvent.getY(),
+							lastMotionEvent.getMetaState());
+					v.onTouchEvent(nEvent);
+					nEvent.recycle();
+					nEvent = MotionEvent.obtain(lastMotionEvent.getDownTime(), lastMotionEvent.getEventTime(),
+							MotionEvent.ACTION_DOWN, lastMotionEvent.getX(), lastMotionEvent.getY(),
+							lastMotionEvent.getMetaState());
+					if (needToHandleEvent != null) {
+						needToHandleEvent.recycle();
+					}
+					needToHandleEvent = nEvent;
 				}
 			}
 		}

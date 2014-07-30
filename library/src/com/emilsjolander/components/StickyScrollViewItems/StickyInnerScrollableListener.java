@@ -7,6 +7,8 @@ import android.view.View;
  */
 public interface StickyInnerScrollableListener {
 
-	public void onFling(View v, int t, int oldT, float velocity);
+	public void onScrollableFling(View v, int t, int oldT, float velocity);
+
+	public void onScrollableScroll(View v, int t, int oldT);
 
 }
