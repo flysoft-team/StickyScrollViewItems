@@ -253,7 +253,7 @@ public class StickyScrollView extends ScrollView implements StickyInnerScrollabl
 			innerScrollableView.setStickyInnerScrollableListener(null);
 			innerScrollableView = null;
 		}
-		setOverScrollMode(View.OVER_SCROLL_ALWAYS);
+//		setOverScrollMode(View.OVER_SCROLL_ALWAYS);
 		if (currentlyStickingView != null) {
 			final int action = ev.getActionMasked();
 			if (action == MotionEvent.ACTION_DOWN) {
@@ -433,7 +433,7 @@ public class StickyScrollView extends ScrollView implements StickyInnerScrollabl
 								lastMotionEvent.getMetaState());
 						lastMotionEvent.recycle();
 						lastMotionEvent = nEvent;
-						setOverScrollMode(View.OVER_SCROLL_NEVER);
+//						setOverScrollMode(View.OVER_SCROLL_NEVER);
 					}
 				}
 			}
@@ -497,7 +497,7 @@ public class StickyScrollView extends ScrollView implements StickyInnerScrollabl
 								currentVelocity)
 								, scrollerHelper.getSplineFlingDuration((int) currentVelocity));
 						flingStarted = true;
-						setOverScrollMode(View.OVER_SCROLL_NEVER);
+//						setOverScrollMode(View.OVER_SCROLL_NEVER);
 					}
 				}
 			}
