@@ -357,6 +357,10 @@ public class StickyScrollView extends ScrollView implements StickyInnerScrollabl
 				needToHandleEvent.recycle();
 				needToHandleEvent = null;
 			}
+			if (innerScrollableView != null)
+			{
+				innerScrollableView.setStickyInnerScrollableListener(null);
+			}
 			forwardTouchesToScrollable = false;
 			forwardTouchesFromScrollable = false;
 
@@ -440,6 +444,7 @@ public class StickyScrollView extends ScrollView implements StickyInnerScrollabl
 					StickyInnerScrollableView scrollableView = canScroll(this, false, 1, getWidth() / 2, getHeight() / 2);
 					if (scrollableView != null) {
 						innerScrollableView = scrollableView;
+						innerScrollableView.setStickyInnerScrollableListener(this);
 						forwardTouchesToScrollable = true;
 						forwardTouchesFromScrollable = false;
 						redirectTouchesToScrollable = false;
