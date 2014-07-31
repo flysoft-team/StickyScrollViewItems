@@ -61,11 +61,10 @@ public class StickyScrollView extends ScrollView implements StickyInnerScrollabl
 	private float startX;
 	private float startYRelative;
 	private float startXRelative;
-	private boolean forwardTouchesToStickyView;
 
-	private boolean forwardTouchesToScrollable;
-	private boolean redirectTouchesToScrollable;
-	private boolean forwardTouchesFromScrollable;
+	private boolean forwardTouchesToScrollable = false;
+	private boolean redirectTouchesToScrollable = false;
+	private boolean forwardTouchesFromScrollable = false;
 
 	public StickyScrollView(Context context) {
 		this(context, null);
@@ -249,24 +248,23 @@ public class StickyScrollView extends ScrollView implements StickyInnerScrollabl
 
 	@Override
 	public boolean onInterceptTouchEvent(MotionEvent ev) {
-		flingStarted = false;
-		if (innerScrollableView != null) {
-			innerScrollableView.setStickyInnerScrollableListener(null);
-			innerScrollableView = null;
+
+		if (touchesState == TouchesState.FLING_SCROLLABLE || touchesState == TouchesState.FLING_THIS) {
+			toUndefined();
 		}
-//		setOverScrollMode(View.OVER_SCROLL_ALWAYS);
 		if (currentlyStickingView != null) {
 			final int action = ev.getActionMasked();
 			if (action == MotionEvent.ACTION_DOWN) {
 				updateStickyOnScreenLocationRect();
 				if (locationRect.contains((int) ev.getRawX(), (int) ev.getRawY())) {
-					forwardTouchesToStickyView = true;
+					toSticky();
 					return false;
 				}
-			} else if ((action == MotionEvent.ACTION_CANCEL || action == MotionEvent.ACTION_UP) && forwardTouchesToStickyView) {
-				forwardTouchesToStickyView = false;
+			} else if ((action == MotionEvent.ACTION_CANCEL || action == MotionEvent.ACTION_UP) &&
+					touchesState == TouchesState.TO_STICKY) {
+				toUndefined();
 				return false;
-			} else if (forwardTouchesToStickyView) {
+			} else if (touchesState == TouchesState.TO_STICKY) {
 				return false;
 			}
 		}
@@ -342,8 +340,7 @@ public class StickyScrollView extends ScrollView implements StickyInnerScrollabl
 
 			return dispatchTouch(ev);
 		} else if (forwardTouchesFromScrollable) {
-			if (needToHandleEvent != null)
-			{
+			if (needToHandleEvent != null) {
 				super.onTouchEvent(needToHandleEvent);
 				needToHandleEvent.recycle();
 				needToHandleEvent = null;
@@ -357,8 +354,7 @@ public class StickyScrollView extends ScrollView implements StickyInnerScrollabl
 				needToHandleEvent.recycle();
 				needToHandleEvent = null;
 			}
-			if (innerScrollableView != null)
-			{
+			if (innerScrollableView != null) {
 				innerScrollableView.setStickyInnerScrollableListener(null);
 			}
 			forwardTouchesToScrollable = false;
@@ -372,23 +368,21 @@ public class StickyScrollView extends ScrollView implements StickyInnerScrollabl
 
 	private void catchMotionEvent(MotionEvent event) {
 //		if (!(forwardTouchesToScrollable || forwardTouchesFromScrollable)) {
-			if (lastMotionEvent != null) {
-				lastMotionEvent.recycle();
-			}
-			lastMotionEvent = MotionEvent.obtain(event);
+		if (lastMotionEvent != null) {
+			lastMotionEvent.recycle();
+		}
+		lastMotionEvent = MotionEvent.obtain(event);
 //		}
 	}
 
 	private boolean dispatchTouch(MotionEvent event) {
 		boolean handled = false;
-		if (redirectTouchesToScrollable && innerScrollableView !=null) {
+		if (redirectTouchesToScrollable && innerScrollableView != null) {
 			handled = innerScrollableView.getListView().onTouchEvent(getRelativeEvent(innerScrollableView,
 					event));
-		} else if (forwardTouchesToScrollable && innerScrollableView !=null) {
+		} else if (forwardTouchesToScrollable && innerScrollableView != null) {
 			handled = innerScrollableView.getListView().onTouchEvent(event);
-		}
-		else if (forwardTouchesFromScrollable)
-		{
+		} else if (forwardTouchesFromScrollable) {
 			handled = super.onTouchEvent(event);
 		}
 		final int action = event.getActionMasked();
@@ -505,21 +499,14 @@ public class StickyScrollView extends ScrollView implements StickyInnerScrollabl
 		}
 	}
 
-	private boolean flingStarted = false;
 
 	private void doTheFlyingThing(int top, int oldTop) {
-		if (top > oldTop && !flingStarted) {
+		if (top > oldTop && touchesState != TouchesState.FLING_SCROLLABLE) {
 			if (!canScrollVertically(1)) {
 				StickyInnerScrollableView scrollableView = canScroll(this, false, 1, getWidth() / 2, getHeight() / 2);
 				if (scrollableView != null) {
 					if (scrollableView instanceof AdapterView) {
-						final AbsListView adapterView = (AbsListView) scrollableView;
-						float currentVelocity = scroller.getCurrVelocity();
-						adapterView.smoothScrollBy(scrollerHelper.getSplineFlingDistance((int)
-								currentVelocity)
-								, scrollerHelper.getSplineFlingDuration((int) currentVelocity));
-						flingStarted = true;
-//						setOverScrollMode(View.OVER_SCROLL_NEVER);
+						toFlingScrollable(scrollableView);
 					}
 				}
 			}
@@ -529,21 +516,10 @@ public class StickyScrollView extends ScrollView implements StickyInnerScrollabl
 
 	@Override
 	public void onScrollableFling(View v, int t, int oldT, float velocity) {
-		if (t <= oldT && t == 0 && !flingStarted) {
+		if (t <= oldT && t == 0 && touchesState != TouchesState.FLING_THIS) {
 			if (!canScrollVertically(1)) {
 				if (!v.canScrollVertically(-1)) {
-					int distance = scrollerHelper.getSplineFlingDistance((int)
-							-velocity);
-					final int height = getHeight() - getPaddingBottom() - getPaddingTop();
-					final int bottom = getChildAt(0).getHeight();
-					final int maxY = Math.max(0, bottom - height);
-					final int scrollY = getScrollY();
-					int dy = Math.max(0, Math.min(scrollY + distance, maxY)) - scrollY;
-					int duration = scrollerHelper.getSplineFlingDuration
-							((int) velocity);
-					scroller.startScroll(getScrollX(), scrollY, 0, dy, duration);
-					postInvalidateOnAnimation();
-					flingStarted = true;
+					toFlingThis(velocity);
 				}
 			}
 		}
@@ -556,7 +532,7 @@ public class StickyScrollView extends ScrollView implements StickyInnerScrollabl
 				if (!v.canScrollVertically(-1)) {
 					forwardTouchesFromScrollable = true;
 					forwardTouchesToScrollable = false;
-					redirectTouchesToScrollable= false;
+					redirectTouchesToScrollable = false;
 					MotionEvent nEvent = MotionEvent.obtain(lastMotionEvent.getDownTime(), lastMotionEvent.getEventTime(),
 							MotionEvent.ACTION_CANCEL, lastMotionEvent.getX(), lastMotionEvent.getY(),
 							lastMotionEvent.getMetaState());
@@ -626,4 +602,73 @@ public class StickyScrollView extends ScrollView implements StickyInnerScrollabl
 			}
 		}
 	}
+
+	public enum TouchesState {
+		UNDEFINED, TO_STICKY, REDIRECT_TO_SCROLLABLE, REDIRECT_FROM_SCROLLABLE,
+		TRANSLATE_TO_SCROLLABLE, FLING_SCROLLABLE, FLING_THIS
+	}
+
+	private TouchesState touchesState = TouchesState.UNDEFINED;
+
+	private void changeState(TouchesState nState, StickyInnerScrollableView scrollableView) {
+		if (innerScrollableView != null) {
+			innerScrollableView.setStickyInnerScrollableListener(null);
+		}
+		switch (touchesState) {
+			case FLING_SCROLLABLE: {
+				fromFlingScrollable();
+				break;
+			}
+			case FLING_THIS: {
+				fromFlingThis();
+				break;
+			}
+		}
+		innerScrollableView = scrollableView;
+		if (innerScrollableView != null) {
+			innerScrollableView.setStickyInnerScrollableListener(this);
+		}
+		touchesState = nState;
+	}
+
+	private void toUndefined() {
+		changeState(TouchesState.UNDEFINED, null);
+	}
+
+	private void toSticky() {
+		changeState(TouchesState.TO_STICKY, null);
+	}
+
+	private void fromFlingScrollable() {
+
+	}
+
+	private void fromFlingThis() {
+
+	}
+
+	private void toFlingThis(float velocity) {
+		changeState(TouchesState.FLING_THIS, null);
+		int distance = scrollerHelper.getSplineFlingDistance((int)
+				-velocity);
+		final int height = getHeight() - getPaddingBottom() - getPaddingTop();
+		final int bottom = getChildAt(0).getHeight();
+		final int maxY = Math.max(0, bottom - height);
+		final int scrollY = getScrollY();
+		int dy = Math.max(0, Math.min(scrollY + distance, maxY)) - scrollY;
+		int duration = scrollerHelper.getSplineFlingDuration
+				((int) velocity);
+		scroller.startScroll(getScrollX(), scrollY, 0, dy, duration);
+		postInvalidateOnAnimation();
+	}
+
+	private void toFlingScrollable(StickyInnerScrollableView scrollableView) {
+		changeState(TouchesState.FLING_SCROLLABLE, scrollableView);
+		final AbsListView adapterView = (AbsListView) scrollableView;
+		float currentVelocity = scroller.getCurrVelocity();
+		adapterView.smoothScrollBy(scrollerHelper.getSplineFlingDistance((int)
+				currentVelocity)
+				, scrollerHelper.getSplineFlingDuration((int) currentVelocity));
+	}
+
 }
