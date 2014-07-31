@@ -602,11 +602,12 @@ public class StickyScrollView extends ScrollView implements StickyInnerScrollabl
 	}
 
 	private void fromFlingScrollable() {
-
+		MotionEvent event = MotionEvent.obtain(0,0,MotionEvent.ACTION_CANCEL,0,0,0);
+		innerScrollableView.getListView().onTouchEvent(event);
 	}
 
 	private void fromFlingThis() {
-
+		scroller.abortAnimation();
 	}
 
 	private void fromTranslateToScrollable() {
