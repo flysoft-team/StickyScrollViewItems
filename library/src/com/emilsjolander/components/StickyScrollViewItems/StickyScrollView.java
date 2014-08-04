@@ -4,6 +4,8 @@ import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
+import android.os.Parcel;
+import android.os.Parcelable;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
@@ -23,7 +25,7 @@ import java.util.Queue;
 /**
  * @author Emil Sj�lander - sjolander.emil@gmail.com
  */
-public class StickyScrollView extends ScrollView implements StickyInnerScrollableListener {
+public class StickyScrollView extends ScrollViewEx implements StickyInnerScrollableListener {
 
 	private static final String TAG = StickyScrollView.class.getSimpleName();
 
@@ -123,7 +125,7 @@ public class StickyScrollView extends ScrollView implements StickyInnerScrollabl
 
 		try {
 
-			Class clazz = ScrollView.class;
+			Class clazz = ScrollViewEx.class;
 			isBeenDragged = clazz.getDeclaredField("mIsBeingDragged");
 			isBeenDragged.setAccessible(true);
 
@@ -175,6 +177,14 @@ public class StickyScrollView extends ScrollView implements StickyInnerScrollabl
 		super.onLayout(changed, l, t, r, b);
 		if (!clipToPaddingHasBeenSet) {
 			clippingToPadding = true;
+		}
+		if (savedState != null)
+		{
+			if (savedState.scrollToBottom)
+			{
+				scrollTo(getScrollX(),getScrollRange());
+			}
+			savedState = null;
 		}
 //		notifyHierarchyChanged();
 	}
@@ -668,5 +678,53 @@ public class StickyScrollView extends ScrollView implements StickyInnerScrollabl
 		}
 		needToHandleEvent = nEvent;
 	}
+
+	private SavedState savedState;
+
+	@Override
+	protected void onRestoreInstanceState(Parcelable state) {
+		SavedState ss = (SavedState) state;
+		super.onRestoreInstanceState(ss.getSuperState());
+		savedState = ss;
+	}
+
+	@Override
+	protected Parcelable onSaveInstanceState() {
+		Parcelable superState = super.onSaveInstanceState();
+		SavedState ss = new SavedState(superState);
+		ss.scrollToBottom = !canScrollVertically(1);
+		return ss;
+	}
+
+	static class SavedState extends BaseSavedState {
+		public boolean scrollToBottom;
+
+		SavedState(Parcelable superState) {
+			super(superState);
+		}
+
+		public SavedState(Parcel source) {
+			super(source);
+			scrollToBottom = source.readInt()==1;
+		}
+
+		@Override
+		public void writeToParcel(Parcel dest, int flags) {
+			super.writeToParcel(dest, flags);
+			dest.writeInt(scrollToBottom ? 1 : 0);
+		}
+
+		public static final Parcelable.Creator<SavedState> CREATOR
+				= new Parcelable.Creator<SavedState>() {
+			public SavedState createFromParcel(Parcel in) {
+				return new SavedState(in);
+			}
+
+			public SavedState[] newArray(int size) {
+				return new SavedState[size];
+			}
+		};
+	}
+
 
 }
