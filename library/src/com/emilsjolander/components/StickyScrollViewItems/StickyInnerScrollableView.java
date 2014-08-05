@@ -1,6 +1,7 @@
 package com.emilsjolander.components.StickyScrollViewItems;
 
 import android.graphics.Point;
+import android.view.MotionEvent;
 import android.widget.AbsListView;
 
 /**
@@ -15,5 +16,7 @@ public interface StickyInnerScrollableView {
 	public void getLocationOnScreen(int[] location);
 
 	public void scrollToTop();
+
+	public void startScrollByMotionEvents(MotionEvent prevEvent, MotionEvent event);
 
 }

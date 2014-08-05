@@ -13,10 +13,7 @@ import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 import android.widget.AbsListView;
 import android.widget.AdapterView;
-import android.widget.OverScroller;
-import android.widget.ScrollView;
 
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -348,10 +345,12 @@ public class StickyScrollView extends ScrollViewEx implements StickyInnerScrolla
 			}
 			case REDIRECT_TO_SCROLLABLE: {
 				if (needToHandleEvent != null) {
-					innerScrollableView.getListView().onTouchEvent(
-							needToHandleEvent);
+//					innerScrollableView.getListView().onTouchEvent(
+//							needToHandleEvent);
+					innerScrollableView.startScrollByMotionEvents(needToHandleEvent, event);
 					needToHandleEvent.recycle();
 					needToHandleEvent = null;
+					break;
 				}
 				handled = innerScrollableView.getListView().onTouchEvent(event);
 				break;
@@ -626,13 +625,13 @@ public class StickyScrollView extends ScrollViewEx implements StickyInnerScrolla
 
 	private void toRedirectToScrollable(StickyInnerScrollableView scrollableView) {
 		changeState(TouchesState.REDIRECT_TO_SCROLLABLE, scrollableView);
-		MotionEvent nEvent = MotionEvent.obtain(lastMotionEvent.getDownTime(), lastMotionEvent.getEventTime(),
-				MotionEvent.ACTION_DOWN, lastMotionEvent.getX(), lastMotionEvent.getY(),
-				lastMotionEvent.getMetaState());
-		if (needToHandleEvent != null) {
-			needToHandleEvent.recycle();
-		}
-		needToHandleEvent = nEvent;
+//		MotionEvent nEvent = MotionEvent.obtain(lastMotionEvent.getDownTime(), lastMotionEvent.getEventTime(),
+//				MotionEvent.ACTION_DOWN, lastMotionEvent.getX(), lastMotionEvent.getY(),
+//				lastMotionEvent.getMetaState());
+//		if (needToHandleEvent != null) {
+//			needToHandleEvent.recycle();
+//		}
+		needToHandleEvent = MotionEvent.obtain(lastMotionEvent);
 	}
 
 	private void toRedirectFromScrollable(StickyInnerScrollableView scrollableView) {
