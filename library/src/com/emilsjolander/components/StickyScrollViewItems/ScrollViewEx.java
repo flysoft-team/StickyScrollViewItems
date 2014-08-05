@@ -1100,7 +1100,7 @@ public class ScrollViewEx extends FrameLayout {
 		mLastScroll = AnimationUtils.currentAnimationTimeMillis();
 	}
 
-	public void stopSmoothScroll()
+	public void stopFling()
 	{
 		if (!mScroller.isFinished()) {
 			mScroller.forceFinished(true);

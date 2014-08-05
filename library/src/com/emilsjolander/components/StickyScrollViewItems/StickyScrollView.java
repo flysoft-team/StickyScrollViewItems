@@ -11,7 +11,6 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.ViewGroup;
-import android.widget.AbsListView;
 import android.widget.AdapterView;
 
 import java.util.ArrayList;
@@ -461,6 +460,7 @@ public class StickyScrollView extends ScrollViewEx implements StickyInnerScrolla
 				StickyInnerScrollableView scrollableView = canScroll(this, false, 1, getWidth() / 2, getHeight() / 2);
 				if (scrollableView != null) {
 					if (scrollableView instanceof AdapterView) {
+						stopFling();
 						toFlingScrollable(scrollableView,getCurrentFlingVelocity());
 					}
 				}
@@ -593,7 +593,7 @@ public class StickyScrollView extends ScrollViewEx implements StickyInnerScrolla
 	}
 
 	private void fromFlingThis() {
-		stopSmoothScroll();
+		stopFling();
 	}
 
 	private void fromTranslateToScrollable() {
