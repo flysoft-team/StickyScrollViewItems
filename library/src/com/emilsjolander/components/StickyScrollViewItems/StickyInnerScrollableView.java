@@ -19,4 +19,8 @@ public interface StickyInnerScrollableView {
 
 	public void startScrollByMotionEvents(MotionEvent prevEvent, MotionEvent event);
 
+	public void startFling(int velocity);
+
+	public void stopFling();
+
 }
