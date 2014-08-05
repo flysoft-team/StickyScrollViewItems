@@ -52,8 +52,6 @@ public class StickyScrollView extends ScrollViewEx implements StickyInnerScrolla
 
 	private int touchSlop;
 
-	private Field isBeenDragged;
-	private OverScroller scroller;
 	private ScrollerHelper scrollerHelper;
 
 	private MotionEvent lastMotionEvent;
@@ -122,18 +120,6 @@ public class StickyScrollView extends ScrollViewEx implements StickyInnerScrolla
 		interceptedEvents = new LinkedList<>();
 		final ViewConfiguration configuration = ViewConfiguration.get(getContext());
 		touchSlop = configuration.getScaledTouchSlop();
-
-		try {
-
-			Class clazz = ScrollViewEx.class;
-			isBeenDragged = clazz.getDeclaredField("mIsBeingDragged");
-			isBeenDragged.setAccessible(true);
-
-			Field field = clazz.getDeclaredField("mScroller");
-			field.setAccessible(true);
-			scroller = (OverScroller) field.get(this);
-		} catch (NoSuchFieldException | IllegalAccessException e) {
-		}
 	}
 
 	private int getLeftForViewRelativeOnlyChild(View v) {
@@ -418,7 +404,7 @@ public class StickyScrollView extends ScrollViewEx implements StickyInnerScrolla
 	protected void onScrollChanged(int l, int t, int oldl, int oldt) {
 		super.onScrollChanged(l, t, oldl, oldt);
 		doTheStickyThing();
-		if (!isBeenDragged()) {
+		if (!isBeingDragged()) {
 			doTheFlyingThing(t, oldt);
 		} else {
 			if (t > oldt) {
@@ -433,14 +419,6 @@ public class StickyScrollView extends ScrollViewEx implements StickyInnerScrolla
 			}
 		}
 
-	}
-
-	private boolean isBeenDragged() {
-		try {
-			return isBeenDragged.getBoolean(this);
-		} catch (IllegalAccessException e) {
-			return false;
-		}
 	}
 
 	private void doTheStickyThing() {
@@ -617,7 +595,7 @@ public class StickyScrollView extends ScrollViewEx implements StickyInnerScrolla
 	}
 
 	private void fromFlingThis() {
-		scroller.abortAnimation();
+		stopSmoothScroll();
 	}
 
 	private void fromTranslateToScrollable() {
@@ -628,24 +606,18 @@ public class StickyScrollView extends ScrollViewEx implements StickyInnerScrolla
 		changeState(TouchesState.FLING_THIS, null);
 		int distance = scrollerHelper.getSplineFlingDistance((int)
 				-velocity);
-		final int height = getHeight() - getPaddingBottom() - getPaddingTop();
-		final int bottom = getChildAt(0).getHeight();
-		final int maxY = Math.max(0, bottom - height);
-		final int scrollY = getScrollY();
-		int dy = Math.max(0, Math.min(scrollY + distance, maxY)) - scrollY;
 		int duration = scrollerHelper.getSplineFlingDuration
-				((int) velocity);
-		scroller.startScroll(getScrollX(), scrollY, 0, dy, duration);
-		postInvalidateOnAnimation();
+				((int) velocity)*4/3;
+		fling((int) -velocity);
 	}
 
 	private void toFlingScrollable(StickyInnerScrollableView scrollableView) {
 		changeState(TouchesState.FLING_SCROLLABLE, scrollableView);
 		final AbsListView adapterView = (AbsListView) scrollableView;
-		float currentVelocity = scroller.getCurrVelocity();
+		float currentVelocity = getCurrentFlingVelocity();
 		adapterView.smoothScrollBy(scrollerHelper.getSplineFlingDistance((int)
 				currentVelocity)
-				, scrollerHelper.getSplineFlingDuration((int) currentVelocity));
+				, scrollerHelper.getSplineFlingDuration((int) currentVelocity)*4/3);
 	}
 
 	private void toTranslateToScrollable(StickyInnerScrollableView scrollableView) {

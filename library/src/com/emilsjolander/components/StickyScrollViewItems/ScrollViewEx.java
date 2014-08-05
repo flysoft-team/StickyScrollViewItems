@@ -24,6 +24,7 @@ import android.view.ViewParent;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.animation.AnimationUtils;
+import android.view.animation.LinearInterpolator;
 import android.widget.EdgeEffect;
 import android.widget.FrameLayout;
 import android.widget.OverScroller;
@@ -171,13 +172,13 @@ public class ScrollViewEx extends FrameLayout {
 
 
 	private void initScrollView() {
-		mScroller = new OverScroller(getContext());
+		mScroller = new OverScroller(getContext(),null,0,0,true);
 		setFocusable(true);
 		setDescendantFocusability(FOCUS_AFTER_DESCENDANTS);
 		setWillNotDraw(false);
 		final ViewConfiguration configuration = ViewConfiguration.get(getContext());
 		mTouchSlop = configuration.getScaledTouchSlop();
-		mMinimumVelocity = configuration.getScaledMinimumFlingVelocity();
+		mMinimumVelocity = configuration.getScaledMinimumFlingVelocity()/2;
 		mMaximumVelocity = configuration.getScaledMaximumFlingVelocity();
 		mOverscrollDistance = configuration.getScaledOverscrollDistance();
 		mOverflingDistance = configuration.getScaledOverflingDistance();
@@ -513,9 +514,6 @@ public class ScrollViewEx extends FrameLayout {
 				mIsBeingDragged = false;
 				mActivePointerId = INVALID_POINTER;
 				recycleVelocityTracker();
-				if (mScroller.springBack(getScrollX(), getScrollY(), 0, 0, 0, getScrollRange())) {
-					postInvalidateOnAnimation();
-				}
 				break;
 			case MotionEvent.ACTION_POINTER_UP:
 				onSecondaryPointerUp(ev);
@@ -631,11 +629,6 @@ public class ScrollViewEx extends FrameLayout {
 					if (getChildCount() > 0) {
 						if ((Math.abs(initialVelocity) > mMinimumVelocity)) {
 							fling(-initialVelocity);
-						} else {
-							if (mScroller.springBack(getScrollX(), getScrollY(), 0, 0, 0,
-									getScrollRange())) {
-								postInvalidateOnAnimation();
-							}
 						}
 					}
 
@@ -645,9 +638,6 @@ public class ScrollViewEx extends FrameLayout {
 				break;
 			case MotionEvent.ACTION_CANCEL:
 				if (mIsBeingDragged && getChildCount() > 0) {
-					if (mScroller.springBack(getScrollX(), getScrollY(), 0, 0, 0, getScrollRange())) {
-						postInvalidateOnAnimation();
-					}
 					mActivePointerId = INVALID_POINTER;
 					endDrag();
 				}
@@ -725,9 +715,9 @@ public class ScrollViewEx extends FrameLayout {
 		if (!mScroller.isFinished()) {
 			final int oldY = getScrollY();
 			setScrollY(scrollY);
-			if (clampedY) {
-				mScroller.springBack(getScrollX(), getScrollY(), 0, 0, 0, getScrollRange());
-			}
+//			if (clampedY) {
+//				mScroller.springBack(getScrollX(), getScrollY(), 0, 0, 0, getScrollRange());
+//			}
 		} else {
 			super.scrollTo(scrollX, scrollY);
 		}
@@ -1086,35 +1076,46 @@ public class ScrollViewEx extends FrameLayout {
 		}
 	}
 
-	/**
-	 * Like {@link View#scrollBy}, but scroll smoothly instead of immediately.
-	 *
-	 * @param dx the number of pixels to scroll by on the X axis
-	 * @param dy the number of pixels to scroll by on the Y axis
-	 */
-	public final void smoothScrollBy(int dx, int dy) {
+	public final void smoothScrollBy(int distance, int duration) {
 		if (getChildCount() == 0) {
 			// Nothing to do.
 			return;
 		}
-		long duration = AnimationUtils.currentAnimationTimeMillis() - mLastScroll;
-		if (duration > ANIMATED_SCROLL_GAP) {
+		long dt = AnimationUtils.currentAnimationTimeMillis() - mLastScroll;
+		if (dt > ANIMATED_SCROLL_GAP) {
 			final int height = getHeight() - getPaddingBottom() - getPaddingTop();
 			final int bottom = getChildAt(0).getHeight();
 			final int maxY = Math.max(0, bottom - height);
 			final int scrollY = getScrollY();
-			dy = Math.max(0, Math.min(scrollY + dy, maxY)) - scrollY;
+			distance = Math.max(0, Math.min(scrollY + distance, maxY)) - scrollY;
 
-			mScroller.startScroll(getScrollX(), scrollY, 0, dy);
+			mScroller.startScroll(getScrollX(), scrollY, 0, distance,duration);
 			postInvalidateOnAnimation();
 		} else {
 			if (!mScroller.isFinished()) {
 				mScroller.abortAnimation();
 			}
-			scrollBy(dx, dy);
+			scrollBy(0, distance);
 		}
 		mLastScroll = AnimationUtils.currentAnimationTimeMillis();
 	}
+
+	public void stopSmoothScroll()
+	{
+		if (!mScroller.isFinished()) {
+			mScroller.forceFinished(true);
+		}
+	}
+
+	public float getCurrentFlingVelocity(){
+		return mScroller.getCurrVelocity();
+	}
+
+	public boolean isBeingDragged()
+	{
+		return mIsBeingDragged;
+	}
+
 
 	/**
 	 * Like {@link #scrollTo}, but scroll smoothly instead of immediately.
