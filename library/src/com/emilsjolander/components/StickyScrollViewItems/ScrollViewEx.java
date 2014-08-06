@@ -112,6 +112,8 @@ public class ScrollViewEx extends FrameLayout {
 
 	private SavedState mSavedState;
 
+	private boolean wasLaidOut;
+
 	public ScrollViewEx(Context context) {
 		this(context, null);
 	}
@@ -125,6 +127,12 @@ public class ScrollViewEx extends FrameLayout {
 		initScrollView();
 
 		setFillViewport(true);
+	}
+
+	@Override
+	protected void onAttachedToWindow() {
+		super.onAttachedToWindow();
+		wasLaidOut = false;
 	}
 
 	@Override
@@ -1480,7 +1488,7 @@ public class ScrollViewEx extends FrameLayout {
 		}
 		mChildToScrollTo = null;
 
-		if (!isLaidOut()) {
+		if (!wasLaidOut) {
 			if (mSavedState != null) {
 				setScrollY(mSavedState.scrollPosition);
 				mSavedState = null;
@@ -1500,6 +1508,7 @@ public class ScrollViewEx extends FrameLayout {
 
 		// Calling this with the present values causes it to re-claim them
 		scrollTo(getScrollX(), getScrollY());
+		wasLaidOut = true;
 	}
 
 	@Override
