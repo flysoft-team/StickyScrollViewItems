@@ -48,8 +48,6 @@ public class StickyScrollView extends ScrollViewEx implements StickyInnerScrolla
 
 	private int touchSlop;
 
-	private ScrollerHelper scrollerHelper;
-
 	private MotionEvent lastMotionEvent;
 	private MotionEvent needToHandleEvent;
 
@@ -112,7 +110,6 @@ public class StickyScrollView extends ScrollViewEx implements StickyInnerScrolla
 
 
 	public void setup() {
-		scrollerHelper = new ScrollerHelper(getContext());
 		interceptedEvents = new LinkedList<>();
 		final ViewConfiguration configuration = ViewConfiguration.get(getContext());
 		touchSlop = configuration.getScaledTouchSlop();
