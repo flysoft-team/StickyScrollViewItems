@@ -349,6 +349,7 @@ public class StickyScrollView extends ScrollViewEx implements StickyInnerScrolla
 					innerScrollableView.startScrollByMotionEvents(needToHandleEvent, event);
 					needToHandleEvent.recycle();
 					needToHandleEvent = null;
+					handled = true;
 					break;
 				}
 				handled = innerScrollableView.getListView().onTouchEvent(event);
@@ -356,9 +357,12 @@ public class StickyScrollView extends ScrollViewEx implements StickyInnerScrolla
 			}
 			case REDIRECT_FROM_SCROLLABLE: {
 				if (needToHandleEvent != null) {
-					super.onTouchEvent(needToHandleEvent);
+//					super.onTouchEvent(needToHandleEvent);
+					startScrollByMotionEvents(needToHandleEvent,event);
 					needToHandleEvent.recycle();
 					needToHandleEvent = null;
+					handled = true;
+					break;
 				}
 				handled = super.onTouchEvent(event);
 				break;
@@ -641,13 +645,13 @@ public class StickyScrollView extends ScrollViewEx implements StickyInnerScrolla
 				lastMotionEvent.getMetaState());
 		scrollableView.getListView().onTouchEvent(nEvent);
 		nEvent.recycle();
-		nEvent = MotionEvent.obtain(lastMotionEvent.getDownTime(), lastMotionEvent.getEventTime(),
-				MotionEvent.ACTION_DOWN, lastMotionEvent.getX(), lastMotionEvent.getY(),
-				lastMotionEvent.getMetaState());
-		if (needToHandleEvent != null) {
-			needToHandleEvent.recycle();
-		}
-		needToHandleEvent = nEvent;
+//		nEvent = MotionEvent.obtain(lastMotionEvent.getDownTime(), lastMotionEvent.getEventTime(),
+//				MotionEvent.ACTION_DOWN, lastMotionEvent.getX(), lastMotionEvent.getY(),
+//				lastMotionEvent.getMetaState());
+//		if (needToHandleEvent != null) {
+//			needToHandleEvent.recycle();
+//		}
+		needToHandleEvent = MotionEvent.obtain(lastMotionEvent);
 	}
 
 	private SavedState savedState;

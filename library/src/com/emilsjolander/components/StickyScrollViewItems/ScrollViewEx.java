@@ -417,6 +417,67 @@ public class ScrollViewEx extends FrameLayout {
 		super.requestDisallowInterceptTouchEvent(disallowIntercept);
 	}
 
+	protected void startScrollByMotionEvents(MotionEvent prevEvent,MotionEvent event)
+	{
+		if (!mScroller.isFinished()) {
+			mScroller.forceFinished(true);
+
+		}
+
+		// Remember where the motion event started
+		mLastMotionY = (int) prevEvent.getY();
+		mActivePointerId = prevEvent.getPointerId(0);
+
+		initOrResetVelocityTracker();
+		mVelocityTracker.addMovement(prevEvent);
+		mIsBeingDragged = true;
+
+		final int y = (int) event.getY(mActivePointerId);
+
+		// Scroll to follow the motion event
+
+		int deltaY = mLastMotionY - y;
+		if (deltaY > 0) {
+			deltaY -= mTouchSlop;
+		} else {
+			deltaY += mTouchSlop;
+		}
+		mLastMotionY = y;
+		final int oldX = getScrollX();
+		final int oldY = getScrollY();
+		final int range = getScrollRange();
+		final int overscrollMode = getOverScrollMode();
+		final boolean canOverscroll = overscrollMode == OVER_SCROLL_ALWAYS ||
+				(overscrollMode == OVER_SCROLL_IF_CONTENT_SCROLLS && range > 0);
+
+		// Calling overScrollBy will call onOverScrolled, which
+		// calls onScrollChanged if applicable.
+		if (overScrollBy(0, deltaY, 0, getScrollY(),
+				0, range, 0, mOverscrollDistance, true)) {
+			// Break our velocity if we hit a scroll barrier.
+			mVelocityTracker.clear();
+		}
+
+		if (canOverscroll) {
+			final int pulledToY = oldY + deltaY;
+			if (pulledToY < 0) {
+				mEdgeGlowTop.onPull((float) deltaY / getHeight());
+				if (!mEdgeGlowBottom.isFinished()) {
+					mEdgeGlowBottom.onRelease();
+				}
+			} else if (pulledToY > range) {
+				mEdgeGlowBottom.onPull((float) deltaY / getHeight());
+				if (!mEdgeGlowTop.isFinished()) {
+					mEdgeGlowTop.onRelease();
+				}
+			}
+			if (mEdgeGlowTop != null
+					&& (!mEdgeGlowTop.isFinished() || !mEdgeGlowBottom.isFinished())) {
+				postInvalidateOnAnimation();
+			}
+		}
+	}
+
 
 	@Override
 	public boolean onInterceptTouchEvent(MotionEvent ev) {
