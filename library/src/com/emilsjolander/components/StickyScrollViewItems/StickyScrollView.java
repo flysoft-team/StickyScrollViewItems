@@ -157,11 +157,9 @@ public class StickyScrollView extends ScrollViewEx implements StickyInnerScrolla
 		if (!clipToPaddingHasBeenSet) {
 			clippingToPadding = true;
 		}
-		if (savedState != null)
-		{
-			if (savedState.scrollToBottom)
-			{
-				scrollTo(getScrollX(),getScrollRange());
+		if (savedState != null) {
+			if (savedState.scrollToBottom) {
+				scrollTo(getScrollX(), getScrollRange());
 			}
 			savedState = null;
 		}
@@ -355,7 +353,7 @@ public class StickyScrollView extends ScrollViewEx implements StickyInnerScrolla
 			case REDIRECT_FROM_SCROLLABLE: {
 				if (needToHandleEvent != null) {
 //					super.onTouchEvent(needToHandleEvent);
-					startScrollByMotionEvents(needToHandleEvent,event);
+					startScrollByMotionEvents(needToHandleEvent, event);
 					needToHandleEvent.recycle();
 					needToHandleEvent = null;
 					handled = true;
@@ -462,7 +460,7 @@ public class StickyScrollView extends ScrollViewEx implements StickyInnerScrolla
 				if (scrollableView != null) {
 					if (scrollableView instanceof AdapterView) {
 						stopFling();
-						toFlingScrollable(scrollableView,getCurrentFlingVelocity());
+						toFlingScrollable(scrollableView, getCurrentFlingVelocity());
 					}
 				}
 			}
@@ -471,8 +469,9 @@ public class StickyScrollView extends ScrollViewEx implements StickyInnerScrolla
 
 
 	@Override
-	public void onScrollableFling(View v, int t, int oldT, float velocity) {
-		if (t <= oldT && t == 0 && touchesState != TouchesState.FLING_THIS) {
+	public void onScrollableFling(View v, int position, int oldPosition, int t, int oldT, float velocity) {
+		if (position <= oldPosition && position == 0 && t > oldT && t == 0 && touchesState != TouchesState
+				.FLING_THIS) {
 			if (!canScrollVertically(1)) {
 				if (!v.canScrollVertically(-1)) {
 					toFlingThis(velocity);
@@ -482,8 +481,8 @@ public class StickyScrollView extends ScrollViewEx implements StickyInnerScrolla
 	}
 
 	@Override
-	public void onScrollableScroll(View v, int t, int oldT) {
-		if (t <= oldT && t == 0) {
+	public void onScrollableScroll(View v, int position, int oldPosition, int t, int oldT) {
+		if (position <= oldPosition && position == 0 && t > oldT && t == 0) {
 			if (!canScrollVertically(1)) {
 				if (!v.canScrollVertically(-1)) {
 					toRedirectFromScrollable((StickyInnerScrollableView) v);
@@ -610,7 +609,7 @@ public class StickyScrollView extends ScrollViewEx implements StickyInnerScrolla
 		fling((int) -velocity);
 	}
 
-	private void toFlingScrollable(StickyInnerScrollableView scrollableView,float velocity) {
+	private void toFlingScrollable(StickyInnerScrollableView scrollableView, float velocity) {
 		changeState(TouchesState.FLING_SCROLLABLE, scrollableView);
 //		final AbsListView adapterView = (AbsListView) scrollableView;
 //		float currentVelocity = getCurrentFlingVelocity();
@@ -626,12 +625,6 @@ public class StickyScrollView extends ScrollViewEx implements StickyInnerScrolla
 
 	private void toRedirectToScrollable(StickyInnerScrollableView scrollableView) {
 		changeState(TouchesState.REDIRECT_TO_SCROLLABLE, scrollableView);
-//		MotionEvent nEvent = MotionEvent.obtain(lastMotionEvent.getDownTime(), lastMotionEvent.getEventTime(),
-//				MotionEvent.ACTION_DOWN, lastMotionEvent.getX(), lastMotionEvent.getY(),
-//				lastMotionEvent.getMetaState());
-//		if (needToHandleEvent != null) {
-//			needToHandleEvent.recycle();
-//		}
 		needToHandleEvent = MotionEvent.obtain(lastMotionEvent);
 	}
 
@@ -642,12 +635,6 @@ public class StickyScrollView extends ScrollViewEx implements StickyInnerScrolla
 				lastMotionEvent.getMetaState());
 		scrollableView.getListView().onTouchEvent(nEvent);
 		nEvent.recycle();
-//		nEvent = MotionEvent.obtain(lastMotionEvent.getDownTime(), lastMotionEvent.getEventTime(),
-//				MotionEvent.ACTION_DOWN, lastMotionEvent.getX(), lastMotionEvent.getY(),
-//				lastMotionEvent.getMetaState());
-//		if (needToHandleEvent != null) {
-//			needToHandleEvent.recycle();
-//		}
 		needToHandleEvent = MotionEvent.obtain(lastMotionEvent);
 	}
 
@@ -677,7 +664,7 @@ public class StickyScrollView extends ScrollViewEx implements StickyInnerScrolla
 
 		public SavedState(Parcel source) {
 			super(source);
-			scrollToBottom = source.readInt()==1;
+			scrollToBottom = source.readInt() == 1;
 		}
 
 		@Override
