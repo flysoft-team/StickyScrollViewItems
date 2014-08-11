@@ -1,10 +1,8 @@
 package com.emilsjolander.components.StickyScrollViewItems;
 
 import android.content.Context;
-import android.content.res.TypedArray;
 import android.graphics.Canvas;
 import android.graphics.Rect;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Parcel;
 import android.os.Parcelable;
@@ -24,7 +22,6 @@ import android.view.ViewParent;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.animation.AnimationUtils;
-import android.view.animation.LinearInterpolator;
 import android.widget.EdgeEffect;
 import android.widget.FrameLayout;
 import android.widget.OverScroller;
@@ -119,7 +116,7 @@ public class ScrollViewEx extends FrameLayout {
 	}
 
 	public ScrollViewEx(Context context, AttributeSet attrs) {
-		this(context, attrs,android.R.attr.scrollbarStyle);
+		this(context, attrs, android.R.attr.scrollbarStyle);
 	}
 
 	public ScrollViewEx(Context context, AttributeSet attrs, int defStyle) {
@@ -180,13 +177,13 @@ public class ScrollViewEx extends FrameLayout {
 
 
 	private void initScrollView() {
-		mScroller = new OverScroller(getContext(),null,0,0,true);
+		mScroller = new OverScroller(getContext(), null, 0, 0, true);
 		setFocusable(true);
 		setDescendantFocusability(FOCUS_AFTER_DESCENDANTS);
 		setWillNotDraw(false);
 		final ViewConfiguration configuration = ViewConfiguration.get(getContext());
 		mTouchSlop = configuration.getScaledTouchSlop();
-		mMinimumVelocity = configuration.getScaledMinimumFlingVelocity()/2;
+		mMinimumVelocity = configuration.getScaledMinimumFlingVelocity() / 2;
 		mMaximumVelocity = configuration.getScaledMaximumFlingVelocity();
 		mOverscrollDistance = configuration.getScaledOverscrollDistance();
 		mOverflingDistance = configuration.getScaledOverflingDistance();
@@ -425,19 +422,30 @@ public class ScrollViewEx extends FrameLayout {
 		super.requestDisallowInterceptTouchEvent(disallowIntercept);
 	}
 
-	protected void startScrollByMotionEvents(MotionEvent prevEvent,MotionEvent event)
-	{
+	protected VelocityTracker snatchVelocityTracker() {
+		VelocityTracker snatchTracker = mVelocityTracker;
+		mVelocityTracker = null;
+		return snatchTracker;
+	}
+
+	protected void startScrollByMotionEvents(VelocityTracker velocityTracker, MotionEvent prevEvent,
+	                                         MotionEvent event) {
+
 		if (!mScroller.isFinished()) {
 			mScroller.forceFinished(true);
+		}
 
+		if (velocityTracker != null) {
+			recycleVelocityTracker();
+			mVelocityTracker = velocityTracker;
+		} else {
+			initOrResetVelocityTracker();
 		}
 
 		// Remember where the motion event started
 		mLastMotionY = (int) prevEvent.getY();
 		mActivePointerId = prevEvent.getPointerId(0);
 
-		initOrResetVelocityTracker();
-		mVelocityTracker.addMovement(prevEvent);
 		mIsBeingDragged = true;
 
 		final int y = (int) event.getY(mActivePointerId);
@@ -460,11 +468,7 @@ public class ScrollViewEx extends FrameLayout {
 
 		// Calling overScrollBy will call onOverScrolled, which
 		// calls onScrollChanged if applicable.
-		if (overScrollBy(0, deltaY, 0, getScrollY(),
-				0, range, 0, mOverscrollDistance, true)) {
-			// Break our velocity if we hit a scroll barrier.
-			mVelocityTracker.clear();
-		}
+		overScrollBy(0, deltaY, 0, getScrollY(), 0, range, 0, mOverscrollDistance, true);
 
 		if (canOverscroll) {
 			final int pulledToY = oldY + deltaY;
@@ -490,7 +494,7 @@ public class ScrollViewEx extends FrameLayout {
 	@Override
 	public boolean onInterceptTouchEvent(MotionEvent ev) {
 	    /*
-         * This method JUST determines whether we want to intercept the motion.
+	     * This method JUST determines whether we want to intercept the motion.
          * If we return true, onMotionEvent will be called and we do the actual
          * scrolling there.
          */
@@ -514,8 +518,8 @@ public class ScrollViewEx extends FrameLayout {
 
 		switch (action & MotionEvent.ACTION_MASK) {
 			case MotionEvent.ACTION_MOVE: {
-                /*
-                 * mIsBeingDragged == false, otherwise the shortcut would have caught it. Check
+			    /*
+			     * mIsBeingDragged == false, otherwise the shortcut would have caught it. Check
                  * whether the user has moved far enough from his original down touch.
                  */
 
@@ -568,7 +572,7 @@ public class ScrollViewEx extends FrameLayout {
 
 				initOrResetVelocityTracker();
 				mVelocityTracker.addMovement(ev);
-                /*
+	            /*
                 * If being flinged and user touches the screen, initiate drag;
                 * otherwise don't.  mScroller.isFinished should be false when
                 * being flinged.
@@ -666,7 +670,9 @@ public class ScrollViewEx extends FrameLayout {
 					if (overScrollBy(0, deltaY, 0, getScrollY(),
 							0, range, 0, mOverscrollDistance, true)) {
 						// Break our velocity if we hit a scroll barrier.
-						mVelocityTracker.clear();
+						if (mVelocityTracker != null) {
+							mVelocityTracker.clear();
+						}
 					}
 
 					if (canOverscroll) {
@@ -1158,7 +1164,7 @@ public class ScrollViewEx extends FrameLayout {
 			final int scrollY = getScrollY();
 			distance = Math.max(0, Math.min(scrollY + distance, maxY)) - scrollY;
 
-			mScroller.startScroll(getScrollX(), scrollY, 0, distance,duration);
+			mScroller.startScroll(getScrollX(), scrollY, 0, distance, duration);
 			postInvalidateOnAnimation();
 		} else {
 			if (!mScroller.isFinished()) {
@@ -1169,19 +1175,17 @@ public class ScrollViewEx extends FrameLayout {
 		mLastScroll = AnimationUtils.currentAnimationTimeMillis();
 	}
 
-	public void stopFling()
-	{
+	public void stopFling() {
 		if (!mScroller.isFinished()) {
 			mScroller.forceFinished(true);
 		}
 	}
 
-	public float getCurrentFlingVelocity(){
+	public float getCurrentFlingVelocity() {
 		return mScroller.getCurrVelocity();
 	}
 
-	public boolean isBeingDragged()
-	{
+	public boolean isBeingDragged() {
 		return mIsBeingDragged;
 	}
 
@@ -1500,7 +1504,7 @@ public class ScrollViewEx extends FrameLayout {
 
 			// Don't forget to clamp
 			if (getScrollY() > scrollRange) {
-				setScrollY( scrollRange);
+				setScrollY(scrollRange);
 			} else if (getScrollY() < 0) {
 				setScrollY(0);
 			}

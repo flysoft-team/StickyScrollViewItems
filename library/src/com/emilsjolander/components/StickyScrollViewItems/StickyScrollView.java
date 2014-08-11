@@ -8,6 +8,7 @@ import android.os.Parcel;
 import android.os.Parcelable;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
+import android.view.VelocityTracker;
 import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.ViewGroup;
@@ -50,6 +51,7 @@ public class StickyScrollView extends ScrollViewEx implements StickyInnerScrolla
 
 	private MotionEvent lastMotionEvent;
 	private MotionEvent needToHandleEvent;
+	private VelocityTracker velocityTracker;
 
 	private float startY;
 	private float startX;
@@ -341,9 +343,11 @@ public class StickyScrollView extends ScrollViewEx implements StickyInnerScrolla
 				if (needToHandleEvent != null) {
 //					innerScrollableView.getListView().onTouchEvent(
 //							needToHandleEvent);
-					innerScrollableView.startScrollByMotionEvents(needToHandleEvent, event);
+					innerScrollableView.startScrollByMotionEvents(velocityTracker,
+							needToHandleEvent, event);
 					needToHandleEvent.recycle();
 					needToHandleEvent = null;
+					velocityTracker = null;
 					handled = true;
 					break;
 				}
@@ -353,9 +357,10 @@ public class StickyScrollView extends ScrollViewEx implements StickyInnerScrolla
 			case REDIRECT_FROM_SCROLLABLE: {
 				if (needToHandleEvent != null) {
 //					super.onTouchEvent(needToHandleEvent);
-					startScrollByMotionEvents(needToHandleEvent, event);
+					startScrollByMotionEvents(velocityTracker, needToHandleEvent, event);
 					needToHandleEvent.recycle();
 					needToHandleEvent = null;
+					velocityTracker = null;
 					handled = true;
 					break;
 				}
@@ -625,11 +630,13 @@ public class StickyScrollView extends ScrollViewEx implements StickyInnerScrolla
 
 	private void toRedirectToScrollable(StickyInnerScrollableView scrollableView) {
 		changeState(TouchesState.REDIRECT_TO_SCROLLABLE, scrollableView);
+		velocityTracker = snatchVelocityTracker();
 		needToHandleEvent = MotionEvent.obtain(lastMotionEvent);
 	}
 
 	private void toRedirectFromScrollable(StickyInnerScrollableView scrollableView) {
 		changeState(TouchesState.REDIRECT_FROM_SCROLLABLE, scrollableView);
+		velocityTracker = scrollableView.getVelocityTracker();
 		MotionEvent nEvent = MotionEvent.obtain(lastMotionEvent.getDownTime(), lastMotionEvent.getEventTime(),
 				MotionEvent.ACTION_CANCEL, lastMotionEvent.getX(), lastMotionEvent.getY(),
 				lastMotionEvent.getMetaState());

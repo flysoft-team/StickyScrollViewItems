@@ -1,7 +1,7 @@
 package com.emilsjolander.components.StickyScrollViewItems;
 
-import android.graphics.Point;
 import android.view.MotionEvent;
+import android.view.VelocityTracker;
 import android.widget.AbsListView;
 
 /**
@@ -17,10 +17,13 @@ public interface StickyInnerScrollableView {
 
 	public void scrollToTop();
 
-	public void startScrollByMotionEvents(MotionEvent prevEvent, MotionEvent event);
+	public void startScrollByMotionEvents(VelocityTracker velocityTracker, MotionEvent prevEvent,
+	                                      MotionEvent event);
 
 	public void startFling(int velocity);
 
 	public void stopFling();
+
+	public VelocityTracker getVelocityTracker();
 
 }
