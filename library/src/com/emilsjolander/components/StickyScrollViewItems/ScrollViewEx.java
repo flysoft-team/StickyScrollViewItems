@@ -435,6 +435,21 @@ public class ScrollViewEx extends FrameLayout {
 			mScroller.forceFinished(true);
 		}
 
+		if (event.getActionMasked() == MotionEvent.ACTION_UP || event.getActionMasked() == MotionEvent.ACTION_UP) {
+			velocityTracker.addMovement(event);
+			velocityTracker.computeCurrentVelocity(1000, mMaximumVelocity);
+			int initialVelocity = (int) velocityTracker.getYVelocity(mActivePointerId);
+
+			if (getChildCount() > 0) {
+				if ((Math.abs(initialVelocity) > mMinimumVelocity)) {
+					stopAndFly(-initialVelocity);
+				}
+			}
+			return;
+		}
+
+		endDrag();
+
 		if (velocityTracker != null) {
 			recycleVelocityTracker();
 			mVelocityTracker = velocityTracker;
@@ -468,7 +483,9 @@ public class ScrollViewEx extends FrameLayout {
 
 		// Calling overScrollBy will call onOverScrolled, which
 		// calls onScrollChanged if applicable.
-		overScrollBy(0, deltaY, 0, getScrollY(), 0, range, 0, mOverscrollDistance, true);
+		if (overScrollBy(0, deltaY, 0, getScrollY(), 0, range, 0, mOverscrollDistance, true)) {
+//			mVelocityTracker.clear();
+		}
 
 		if (canOverscroll) {
 			final int pulledToY = oldY + deltaY;
@@ -572,8 +589,8 @@ public class ScrollViewEx extends FrameLayout {
 
 				initOrResetVelocityTracker();
 				mVelocityTracker.addMovement(ev);
-	            /*
-                * If being flinged and user touches the screen, initiate drag;
+				/*
+				* If being flinged and user touches the screen, initiate drag;
                 * otherwise don't.  mScroller.isFinished should be false when
                 * being flinged.
                 */
@@ -583,7 +600,7 @@ public class ScrollViewEx extends FrameLayout {
 
 			case MotionEvent.ACTION_CANCEL:
 			case MotionEvent.ACTION_UP:
-                /* Release the drag */
+	            /* Release the drag */
 				mIsBeingDragged = false;
 				mActivePointerId = INVALID_POINTER;
 				recycleVelocityTracker();
@@ -1563,6 +1580,12 @@ public class ScrollViewEx extends FrameLayout {
 
 			postInvalidateOnAnimation();
 		}
+	}
+
+	public void stopAndFly(int velocity) {
+		mActivePointerId = INVALID_POINTER;
+		endDrag();
+		fling(velocity);
 	}
 
 	private void endDrag() {

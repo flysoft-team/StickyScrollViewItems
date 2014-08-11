@@ -612,6 +612,7 @@ public class StickyScrollView extends ScrollViewEx implements StickyInnerScrolla
 //		int duration = scrollerHelper.getSplineFlingDuration
 //				((int) velocity)*4/3;
 		fling((int) -velocity);
+
 	}
 
 	private void toFlingScrollable(StickyInnerScrollableView scrollableView, float velocity) {
