@@ -439,7 +439,7 @@ public class ScrollViewEx extends FrameLayout {
 			velocityTracker.addMovement(event);
 			velocityTracker.computeCurrentVelocity(1000, mMaximumVelocity);
 			int initialVelocity = (int) velocityTracker.getYVelocity(mActivePointerId);
-
+			velocityTracker.recycle();
 			if (getChildCount() > 0) {
 				if ((Math.abs(initialVelocity) > mMinimumVelocity)) {
 					stopAndFly(-initialVelocity);
@@ -600,7 +600,7 @@ public class ScrollViewEx extends FrameLayout {
 
 			case MotionEvent.ACTION_CANCEL:
 			case MotionEvent.ACTION_UP:
-	            /* Release the drag */
+			    /* Release the drag */
 				mIsBeingDragged = false;
 				mActivePointerId = INVALID_POINTER;
 				recycleVelocityTracker();

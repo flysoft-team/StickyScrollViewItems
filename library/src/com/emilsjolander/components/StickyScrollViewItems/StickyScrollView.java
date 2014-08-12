@@ -607,21 +607,12 @@ public class StickyScrollView extends ScrollViewEx implements StickyInnerScrolla
 
 	private void toFlingThis(float velocity) {
 		changeState(TouchesState.FLING_THIS, null);
-//		int distance = scrollerHelper.getSplineFlingDistance((int)
-//				-velocity);
-//		int duration = scrollerHelper.getSplineFlingDuration
-//				((int) velocity)*4/3;
-		fling((int) -velocity);
+		stopAndFly((int) -velocity);
 
 	}
 
 	private void toFlingScrollable(StickyInnerScrollableView scrollableView, float velocity) {
 		changeState(TouchesState.FLING_SCROLLABLE, scrollableView);
-//		final AbsListView adapterView = (AbsListView) scrollableView;
-//		float currentVelocity = getCurrentFlingVelocity();
-//		adapterView.smoothScrollBy(scrollerHelper.getSplineFlingDistance((int)
-//				currentVelocity)
-//				, scrollerHelper.getSplineFlingDuration((int) currentVelocity)*4/3);
 		scrollableView.startFling((int) -velocity);
 	}
 
