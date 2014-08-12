@@ -237,6 +237,18 @@ public class ScrollViewEx extends FrameLayout {
 		return false;
 	}
 
+	@Override
+	public boolean canScrollVertically(int direction) {
+		if (!canScroll()) {
+			return false;
+		}
+		if (direction > 0) {
+			return getScrollY() < getScrollRange();
+		} else {
+			return getScrollY() > 0;
+		}
+	}
+
 	/**
 	 * Indicates whether this ScrollView's content is stretched to fill the viewport.
 	 *
@@ -921,7 +933,7 @@ public class ScrollViewEx extends FrameLayout {
 
 			if (top < viewBottom && viewTop < bottom) {
 			    /*
-                 * the focusable is in the target area, it is a candidate for
+		         * the focusable is in the target area, it is a candidate for
                  * focusing
                  */
 
@@ -1595,6 +1607,7 @@ public class ScrollViewEx extends FrameLayout {
 		}
 
 	}
+
 
 	/**
 	 * {@inheritDoc}

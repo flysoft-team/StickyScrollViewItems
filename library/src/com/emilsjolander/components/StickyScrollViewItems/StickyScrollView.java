@@ -32,13 +32,11 @@ public class StickyScrollView extends ScrollViewEx implements StickyInnerScrolla
 	private static final int DEFAULT_SHADOW_HEIGHT = 10; // dp;
 
 	private View stickyView;
-	private View currentlyStickingView;
+	private boolean isStick;
 	private StickyInnerScrollableView innerScrollableView;
 
 	private Queue<MotionEvent> interceptedEvents;
 
-	private float stickyViewTopOffset;
-	private int stickyViewLeftOffset;
 	private boolean clippingToPadding;
 	private boolean clipToPaddingHasBeenSet;
 
@@ -210,9 +208,9 @@ public class StickyScrollView extends ScrollViewEx implements StickyInnerScrolla
 	private Rect locationRect = new Rect();
 
 	private void updateStickyOnScreenLocationRect() {
-		currentlyStickingView.getLocationOnScreen(location);
-		locationRect.set(location[0], location[1], location[0] + currentlyStickingView.getWidth
-				(), location[1] + currentlyStickingView.getHeight());
+		stickyView.getLocationOnScreen(location);
+		locationRect.set(location[0], location[1], location[0] + stickyView.getWidth
+				(), location[1] + stickyView.getHeight());
 	}
 
 	private MotionEvent getRelativeEvent(StickyInnerScrollableView v, MotionEvent original) {
@@ -238,7 +236,7 @@ public class StickyScrollView extends ScrollViewEx implements StickyInnerScrolla
 		if (touchesState == TouchesState.FLING_SCROLLABLE || touchesState == TouchesState.FLING_THIS) {
 			toUndefined();
 		}
-		if (currentlyStickingView != null) {
+		if (isStick) {
 			final int action = ev.getActionMasked();
 			if (action == MotionEvent.ACTION_DOWN) {
 				updateStickyOnScreenLocationRect();
@@ -424,36 +422,21 @@ public class StickyScrollView extends ScrollViewEx implements StickyInnerScrolla
 	}
 
 	private void doTheStickyThing() {
-		View viewThatShouldStick = null;
-		View approachingView = null;
 		int viewTop = getTopForViewRelativeOnlyChild(stickyView) - getScrollY() + (clippingToPadding ? 0 :
 				getPaddingTop());
 		if (viewTop <= 0) {
-			if (viewThatShouldStick == null || viewTop > (getTopForViewRelativeOnlyChild(viewThatShouldStick) - getScrollY() + (clippingToPadding ? 0 : getPaddingTop()))) {
-				viewThatShouldStick = stickyView;
+			if (!isStick) {
+				startStick();
 			}
 		} else {
-			if (approachingView == null || viewTop < (getTopForViewRelativeOnlyChild(approachingView) - getScrollY() + (clippingToPadding ? 0 : getPaddingTop()))) {
-				approachingView = stickyView;
+			if (isStick) {
+				stopStick();
 			}
-		}
-		if (viewThatShouldStick != null) {
-			stickyViewTopOffset = approachingView == null ? 0 : Math.min(0, getTopForViewRelativeOnlyChild(approachingView) - getScrollY() + (clippingToPadding ? 0 : getPaddingTop()) - viewThatShouldStick.getHeight());
-			if (viewThatShouldStick != currentlyStickingView) {
-				if (currentlyStickingView != null) {
-					stopStickingCurrentlyStickingView();
-				}
-				// only compute the left offset when we start sticking.
-				stickyViewLeftOffset = getLeftForViewRelativeOnlyChild(viewThatShouldStick);
-				startStickingView(viewThatShouldStick);
-			}
-		} else if (currentlyStickingView != null) {
-			stopStickingCurrentlyStickingView();
 		}
 
-		if (currentlyStickingView != null) {
-			currentlyStickingView.setTranslationY((clippingToPadding ? 0 : getPaddingTop()) -
-					getTopForViewRelativeOnlyChild(currentlyStickingView) + getScrollY());
+		if (isStick) {
+			stickyView.setTranslationY((clippingToPadding ? 0 : getPaddingTop()) -
+					getTopForViewRelativeOnlyChild(stickyView) + getScrollY());
 		}
 	}
 
@@ -496,16 +479,16 @@ public class StickyScrollView extends ScrollViewEx implements StickyInnerScrolla
 		}
 	}
 
-	private void startStickingView(View viewThatShouldStick) {
-		currentlyStickingView = viewThatShouldStick;
-		currentlyStickingView.bringToFront();
+	private void startStick() {
+		isStick = true;
+		stickyView.bringToFront();
 		requestLayout();
 		invalidate();
 	}
 
-	private void stopStickingCurrentlyStickingView() {
-		currentlyStickingView.setTranslationY(0);
-		currentlyStickingView = null;
+	private void stopStick() {
+		stickyView.setTranslationY(0);
+		isStick = false;
 	}
 
 	public void notifyStickyAttributeChanged() {
@@ -513,8 +496,8 @@ public class StickyScrollView extends ScrollViewEx implements StickyInnerScrolla
 	}
 
 	private void notifyHierarchyChanged() {
-		if (currentlyStickingView != null) {
-			stopStickingCurrentlyStickingView();
+		if (isStick) {
+			stopStick();
 		}
 		stickyView = null;
 		findStickyViews();
