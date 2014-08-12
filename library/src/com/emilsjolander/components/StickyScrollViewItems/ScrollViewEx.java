@@ -601,9 +601,7 @@ public class ScrollViewEx extends FrameLayout {
 			case MotionEvent.ACTION_CANCEL:
 			case MotionEvent.ACTION_UP:
 			    /* Release the drag */
-				mIsBeingDragged = false;
-				mActivePointerId = INVALID_POINTER;
-				recycleVelocityTracker();
+				endDrag();
 				break;
 			case MotionEvent.ACTION_POINTER_UP:
 				onSecondaryPointerUp(ev);
@@ -724,13 +722,11 @@ public class ScrollViewEx extends FrameLayout {
 						}
 					}
 
-					mActivePointerId = INVALID_POINTER;
 					endDrag();
 				}
 				break;
 			case MotionEvent.ACTION_CANCEL:
 				if (mIsBeingDragged && getChildCount() > 0) {
-					mActivePointerId = INVALID_POINTER;
 					endDrag();
 				}
 				break;
@@ -924,7 +920,7 @@ public class ScrollViewEx extends FrameLayout {
 			int viewBottom = view.getBottom();
 
 			if (top < viewBottom && viewTop < bottom) {
-                /*
+			    /*
                  * the focusable is in the target area, it is a candidate for
                  * focusing
                  */
@@ -1583,12 +1579,12 @@ public class ScrollViewEx extends FrameLayout {
 	}
 
 	public void stopAndFly(int velocity) {
-		mActivePointerId = INVALID_POINTER;
 		endDrag();
 		fling(velocity);
 	}
 
-	private void endDrag() {
+	protected void endDrag() {
+		mActivePointerId = INVALID_POINTER;
 		mIsBeingDragged = false;
 
 		recycleVelocityTracker();

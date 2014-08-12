@@ -24,6 +24,8 @@ public interface StickyInnerScrollableView {
 
 	public void stopFling();
 
+	public void stopScroll();
+
 	public VelocityTracker getVelocityTracker();
 
 }

@@ -624,17 +624,14 @@ public class StickyScrollView extends ScrollViewEx implements StickyInnerScrolla
 		changeState(TouchesState.REDIRECT_TO_SCROLLABLE, scrollableView);
 		velocityTracker = snatchVelocityTracker();
 		needToHandleEvent = MotionEvent.obtain(lastMotionEvent);
+		endDrag();
 	}
 
 	private void toRedirectFromScrollable(StickyInnerScrollableView scrollableView) {
 		changeState(TouchesState.REDIRECT_FROM_SCROLLABLE, scrollableView);
 		velocityTracker = scrollableView.getVelocityTracker();
-		MotionEvent nEvent = MotionEvent.obtain(lastMotionEvent.getDownTime(), lastMotionEvent.getEventTime(),
-				MotionEvent.ACTION_CANCEL, lastMotionEvent.getX(), lastMotionEvent.getY(),
-				lastMotionEvent.getMetaState());
-		scrollableView.getListView().onTouchEvent(nEvent);
-		nEvent.recycle();
 		needToHandleEvent = MotionEvent.obtain(lastMotionEvent);
+		scrollableView.stopScroll();
 	}
 
 	private SavedState savedState;
