@@ -269,7 +269,8 @@ public class StickyScrollView extends ScrollViewEx implements StickyInnerScrolla
 					float y = ev.getRawY();
 					float deltaY = startY - y;
 					if (deltaY > 0 && deltaY > touchSlop) {
-						StickyInnerScrollableView scrollableView = canScroll(this, false, 1, (int) startXRelative,
+						StickyInnerScrollableView scrollableView = canScroll(this, false, 0,
+								(int) startXRelative,
 								(int) startYRelative);
 						if (scrollableView != null) {
 							toTranslateToScrollable(scrollableView);
@@ -390,12 +391,8 @@ public class StickyScrollView extends ScrollViewEx implements StickyInnerScrolla
 				}
 			}
 		}
-		boolean canScroll = v instanceof StickyInnerScrollableView && checkV && v.canScrollVertically(direction);
-//		boolean canScroll = false;
-//		if (v instanceof  StickyInnerScrollableView)
-//		{
-//			canScroll = checkV && v.canScrollVertically(direction);
-//		}
+		boolean canScroll = v instanceof StickyInnerScrollableView && checkV && (direction == 0 || v
+				.canScrollVertically(direction));
 		return canScroll ? (StickyInnerScrollableView) v : null;
 	}
 
