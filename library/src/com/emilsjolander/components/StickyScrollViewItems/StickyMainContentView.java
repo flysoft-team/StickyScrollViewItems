@@ -2,16 +2,13 @@ package com.emilsjolander.components.StickyScrollViewItems;
 
 import android.view.MotionEvent;
 import android.view.VelocityTracker;
-import android.widget.AbsListView;
 
 /**
  * Created by Shad on 28.07.14.
  */
-public interface StickyInnerScrollableView {
+public interface StickyMainContentView {
 
-	public void setStickyInnerScrollableListener(StickyInnerScrollableListener stickyInnerScrollableListener);
-
-	public AbsListView getListView();
+	public void setStickyMainContentScrollListener(StickyMainContentScrollListener stickyMainContentScrollListener);
 
 	public void getLocationOnScreen(int[] location);
 
@@ -25,6 +22,8 @@ public interface StickyInnerScrollableView {
 	public void stopFling();
 
 	public void stopScroll();
+
+	public boolean onTranslatedTouchEvent(MotionEvent event);
 
 	public VelocityTracker getVelocityTracker();
 
