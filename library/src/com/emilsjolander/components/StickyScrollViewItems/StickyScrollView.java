@@ -414,18 +414,22 @@ public class StickyScrollView extends ScrollViewEx implements StickyMainContentS
 	}
 
 	public void showSticky(boolean show) {
-		if (isStick && isStickyHidden != show) {
+		if (isStick && isStickyHidden == show) {
 			if (currentAnimator != null) {
 				currentAnimator.cancel();
 			}
 			if (show) {
+				currentAnimator = stickyView.animate().translationY(getStickTranslation());
+
+			} else {
 				currentAnimator = stickyView.animate().translationYBy(-(clippingToPadding ? 0 : getPaddingTop()) - stickOffsetY - stickyView
 						.getHeight())
 						.setDuration(getAnimationDuration());
-			} else {
-				currentAnimator = stickyView.animate().translationY(getStickTranslation());
 			}
-			isStickyHidden = show;
+			isStickyHidden = !show;
+			if (stickyScrollListener != null) {
+				stickyScrollListener.onStickyVisibilityChanged(isStickyHidden);
+			}
 		}
 	}
 
@@ -503,6 +507,9 @@ public class StickyScrollView extends ScrollViewEx implements StickyMainContentS
 		if (currentAnimator != null) {
 			currentAnimator.cancel();
 			currentAnimator = null;
+		}
+		if (stickyScrollListener != null) {
+			stickyScrollListener.onStickyVisibilityChanged(isStickyHidden);
 		}
 		stickyView.setTranslationY(0);
 	}
@@ -695,6 +702,8 @@ public class StickyScrollView extends ScrollViewEx implements StickyMainContentS
 
 	public interface StickyScrollListener {
 		public void onMainContentScrolled(View scrollContainer, int position, int oldPosition);
+
+		public void onStickyVisibilityChanged(boolean isStickyHidden);
 	}
 
 }
