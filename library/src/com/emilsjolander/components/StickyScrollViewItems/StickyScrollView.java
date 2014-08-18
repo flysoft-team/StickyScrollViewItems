@@ -3,7 +3,6 @@ package com.emilsjolander.components.StickyScrollViewItems;
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.Rect;
-import android.graphics.drawable.Drawable;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.util.AttributeSet;
@@ -12,6 +11,7 @@ import android.view.VelocityTracker;
 import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.ViewGroup;
+import android.view.ViewPropertyAnimator;
 import android.widget.AdapterView;
 
 import java.util.ArrayList;
@@ -31,17 +31,20 @@ public class StickyScrollView extends ScrollViewEx implements StickyMainContentS
 	 */
 	private static final int DEFAULT_SHADOW_HEIGHT = 10; // dp;
 
+	private ViewPropertyAnimator currentAnimator;
+	private final int animationDuration;
 	private View stickyView;
 	private boolean isStick;
+	private boolean isStickyHidden;
 	private StickyMainContentView mainContentView;
+	private StickyScrollListener stickyScrollListener;
 
 	private Queue<MotionEvent> interceptedEvents;
 
 	private boolean clippingToPadding;
 	private boolean clipToPaddingHasBeenSet;
 
-	private int mShadowHeight;
-	private Drawable mShadowDrawable;
+	private int stickOffsetY;
 
 	private int stickyViewId;
 
@@ -73,24 +76,14 @@ public class StickyScrollView extends ScrollViewEx implements StickyMainContentS
 		TypedArray a = context.obtainStyledAttributes(attrs,
 				R.styleable.StickyScrollView, defStyle, 0);
 
-		final float density = context.getResources().getDisplayMetrics().density;
-		int defaultShadowHeightInPix = (int) (DEFAULT_SHADOW_HEIGHT * density + 0.5f);
-
-		mShadowHeight = a.getDimensionPixelSize(
-				R.styleable.StickyScrollView_stuckShadowHeight,
-				defaultShadowHeightInPix);
-
-		int shadowDrawableRes = a.getResourceId(
-				R.styleable.StickyScrollView_stuckShadowDrawable, -1);
-
-		if (shadowDrawableRes != -1) {
-			mShadowDrawable = context.getResources().getDrawable(
-					shadowDrawableRes);
-		}
+		stickOffsetY = a.getDimensionPixelSize(
+				R.styleable.StickyScrollView_stickOffsetY, 0);
 
 		stickyViewId = a.getResourceId(R.styleable.StickyScrollView_stickyView, 0);
 
 		a.recycle();
+
+		animationDuration = context.getResources().getInteger(android.R.integer.config_mediumAnimTime);
 
 	}
 
@@ -99,20 +92,22 @@ public class StickyScrollView extends ScrollViewEx implements StickyMainContentS
 		findStickyViews();
 	}
 
-	/**
-	 * Sets the height of the shadow drawable in pixels.
-	 *
-	 * @param height
-	 */
-	public void setShadowHeight(int height) {
-		mShadowHeight = height;
+	public void setStickyOffsetY(int stickOffsetY) {
+		this.stickOffsetY = stickOffsetY;
 	}
-
 
 	public void setup() {
 		interceptedEvents = new LinkedList<>();
 		final ViewConfiguration configuration = ViewConfiguration.get(getContext());
 		touchSlop = configuration.getScaledTouchSlop();
+	}
+
+	public void setStickyScrollListener(StickyScrollListener stickyScrollListener) {
+		this.stickyScrollListener = stickyScrollListener;
+	}
+
+	public int getAnimationDuration() {
+		return animationDuration;
 	}
 
 	private int getLeftForViewRelativeOnlyChild(View v) {
@@ -236,7 +231,7 @@ public class StickyScrollView extends ScrollViewEx implements StickyMainContentS
 		if (touchesState == TouchesState.FLING_SCROLLABLE || touchesState == TouchesState.FLING_THIS) {
 			toUndefined();
 		}
-		if (isStick) {
+		if (isStick && !isStickyHidden) {
 			final int action = ev.getActionMasked();
 			if (action == MotionEvent.ACTION_DOWN) {
 				updateStickyOnScreenLocationRect();
@@ -418,10 +413,31 @@ public class StickyScrollView extends ScrollViewEx implements StickyMainContentS
 
 	}
 
+	public void showSticky(boolean show) {
+		if (isStick && isStickyHidden != show) {
+			if (currentAnimator != null) {
+				currentAnimator.cancel();
+			}
+			if (show) {
+				currentAnimator = stickyView.animate().translationYBy(-(clippingToPadding ? 0 : getPaddingTop()) - stickOffsetY - stickyView
+						.getHeight())
+						.setDuration(getAnimationDuration());
+			} else {
+				currentAnimator = stickyView.animate().translationY(getStickTranslation());
+			}
+			isStickyHidden = show;
+		}
+	}
+
+	private int getStickTranslation() {
+		return (clippingToPadding ? 0 : getPaddingTop()) -
+				getTopForViewRelativeOnlyChild(stickyView) + getScrollY() + stickOffsetY;
+	}
+
 	private void doTheStickyThing() {
 		int viewTop = getTopForViewRelativeOnlyChild(stickyView) - getScrollY() + (clippingToPadding ? 0 :
 				getPaddingTop());
-		if (viewTop <= 0) {
+		if (viewTop <= stickOffsetY) {
 			if (!isStick) {
 				startStick();
 			}
@@ -431,9 +447,8 @@ public class StickyScrollView extends ScrollViewEx implements StickyMainContentS
 			}
 		}
 
-		if (isStick) {
-			stickyView.setTranslationY((clippingToPadding ? 0 : getPaddingTop()) -
-					getTopForViewRelativeOnlyChild(stickyView) + getScrollY());
+		if (isStick && !isStickyHidden) {
+			stickyView.setTranslationY(getStickTranslation());
 		}
 	}
 
@@ -463,6 +478,9 @@ public class StickyScrollView extends ScrollViewEx implements StickyMainContentS
 				}
 			}
 		}
+		if (stickyScrollListener != null) {
+			stickyScrollListener.onMainContentScrolled(v, position, oldPosition);
+		}
 	}
 
 	@Override
@@ -474,17 +492,31 @@ public class StickyScrollView extends ScrollViewEx implements StickyMainContentS
 				}
 			}
 		}
+
+		if (stickyScrollListener != null) {
+			stickyScrollListener.onMainContentScrolled(v, position, oldPosition);
+		}
+	}
+
+	private void stopStickyShowAnimation() {
+		isStickyHidden = false;
+		if (currentAnimator != null) {
+			currentAnimator.cancel();
+			currentAnimator = null;
+		}
+		stickyView.setTranslationY(0);
 	}
 
 	private void startStick() {
 		isStick = true;
+		stopStickyShowAnimation();
 		stickyView.bringToFront();
 		requestLayout();
 		invalidate();
 	}
 
 	private void stopStick() {
-		stickyView.setTranslationY(0);
+		stopStickyShowAnimation();
 		isStick = false;
 	}
 
@@ -661,5 +693,8 @@ public class StickyScrollView extends ScrollViewEx implements StickyMainContentS
 		};
 	}
 
+	public interface StickyScrollListener {
+		public void onMainContentScrolled(View scrollContainer, int position, int oldPosition);
+	}
 
 }
