@@ -3,6 +3,7 @@ package com.emilsjolander.components.StickyScrollViewItems;
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.Rect;
+import android.graphics.drawable.Drawable;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.util.AttributeSet;
@@ -19,10 +20,15 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 
+import uk.co.chrisjenx.paralloid.ParallaxViewController;
+import uk.co.chrisjenx.paralloid.Parallaxor;
+import uk.co.chrisjenx.paralloid.transform.Transformer;
+
 /**
  * @author Emil Sj�lander - sjolander.emil@gmail.com
  */
-public class StickyScrollView extends ScrollViewEx implements StickyMainContentScrollListener {
+public class StickyScrollView extends ScrollViewEx implements StickyMainContentScrollListener,
+        Parallaxor {
 
 	private static final String TAG = StickyScrollView.class.getSimpleName();
 
@@ -59,6 +65,7 @@ public class StickyScrollView extends ScrollViewEx implements StickyMainContentS
 	private float startYRelative;
 	private float startXRelative;
 
+    ParallaxViewController parallaxViewController;
 
 	public StickyScrollView(Context context) {
 		this(context, null);
@@ -100,6 +107,8 @@ public class StickyScrollView extends ScrollViewEx implements StickyMainContentS
 		interceptedEvents = new LinkedList<>();
 		final ViewConfiguration configuration = ViewConfiguration.get(getContext());
 		touchSlop = configuration.getScaledTouchSlop();
+
+        parallaxViewController = ParallaxViewController.wrap(this);
 	}
 
 	public void setStickyScrollListener(StickyScrollListener stickyScrollListener) {
@@ -414,6 +423,7 @@ public class StickyScrollView extends ScrollViewEx implements StickyMainContentS
 			stickyScrollListener.onScrollViewScrolled(t, oldt, getScrollRange());
 		}
 
+        parallaxViewController.onScrollChanged(this, l, t, oldl, oldt);
 	}
 
 	public void showSticky(boolean show) {
@@ -710,5 +720,21 @@ public class StickyScrollView extends ScrollViewEx implements StickyMainContentS
 
 		public void onScrollViewScrolled(int scroll, int oldScroll, int maxScroll);
 	}
+
+
+    @Override
+    public void parallaxViewBy(View view, float multiplier) {
+        parallaxViewController.parallaxViewBy(view, multiplier);
+    }
+
+    @Override
+    public void parallaxViewBy(View view, Transformer transformer, float multiplier) {
+        parallaxViewController.parallaxViewBy(view, transformer, multiplier);
+    }
+
+    @Override
+    public void parallaxViewBackgroundBy(View view, Drawable drawable, float multiplier) {
+        parallaxViewController.parallaxViewBackgroundBy(view, drawable, multiplier);
+    }
 
 }
