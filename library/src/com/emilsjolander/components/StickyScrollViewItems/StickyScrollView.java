@@ -410,6 +410,9 @@ public class StickyScrollView extends ScrollViewEx implements StickyMainContentS
 				}
 			}
 		}
+		if (stickyScrollListener != null) {
+			stickyScrollListener.onScrollViewScrolled(t, oldt, getScrollRange());
+		}
 
 	}
 
@@ -704,6 +707,8 @@ public class StickyScrollView extends ScrollViewEx implements StickyMainContentS
 		public void onMainContentScrolled(View scrollContainer, int position, int oldPosition);
 
 		public void onStickyVisibilityChanged(boolean isStickyHidden);
+
+		public void onScrollViewScrolled(int scroll, int oldScroll, int maxScroll);
 	}
 
 }
