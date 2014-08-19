@@ -17,11 +17,11 @@ android {
     }
 
     defaultConfig {
-        minSdkVersion 9
+        minSdkVersion 14
         targetSdkVersion 20
     }
 }
 
 dependencies {
-    compile project(':paralloid')
+    compile project(':paralloid:paralloid')
 }
