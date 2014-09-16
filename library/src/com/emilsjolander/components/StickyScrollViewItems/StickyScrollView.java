@@ -28,7 +28,7 @@ import uk.co.chrisjenx.paralloid.transform.Transformer;
  * @author Emil Sj�lander - sjolander.emil@gmail.com
  */
 public class StickyScrollView extends ScrollViewEx implements StickyMainContentScrollListener,
-        Parallaxor {
+		Parallaxor {
 
 	private static final String TAG = StickyScrollView.class.getSimpleName();
 
@@ -65,7 +65,7 @@ public class StickyScrollView extends ScrollViewEx implements StickyMainContentS
 	private float startYRelative;
 	private float startXRelative;
 
-    ParallaxViewController parallaxViewController;
+	ParallaxViewController parallaxViewController;
 
 	public StickyScrollView(Context context) {
 		this(context, null);
@@ -108,7 +108,7 @@ public class StickyScrollView extends ScrollViewEx implements StickyMainContentS
 		final ViewConfiguration configuration = ViewConfiguration.get(getContext());
 		touchSlop = configuration.getScaledTouchSlop();
 
-        parallaxViewController = ParallaxViewController.wrap(this);
+		parallaxViewController = ParallaxViewController.wrap(this);
 	}
 
 	public void setStickyScrollListener(StickyScrollListener stickyScrollListener) {
@@ -423,7 +423,7 @@ public class StickyScrollView extends ScrollViewEx implements StickyMainContentS
 			stickyScrollListener.onScrollViewScrolled(t, oldt, getScrollRange());
 		}
 
-        parallaxViewController.onScrollChanged(this, l, t, oldl, oldt);
+		parallaxViewController.onScrollChanged(this, l, t, oldl, oldt);
 	}
 
 	public void showSticky(boolean show) {
@@ -683,15 +683,15 @@ public class StickyScrollView extends ScrollViewEx implements StickyMainContentS
 		return ss;
 	}
 
-	static class SavedState extends BaseSavedState {
+	public static class SavedState extends ClassLoaderSavedState {
 		public boolean scrollToBottom;
 
-		SavedState(Parcelable superState) {
-			super(superState);
+		public SavedState(Parcelable superState) {
+			super(superState, StickyScrollView.class.getClassLoader());
 		}
 
 		public SavedState(Parcel source) {
-			super(source);
+			super(source, StickyScrollView.class.getClassLoader());
 			scrollToBottom = source.readInt() == 1;
 		}
 
@@ -722,19 +722,19 @@ public class StickyScrollView extends ScrollViewEx implements StickyMainContentS
 	}
 
 
-    @Override
-    public void parallaxViewBy(View view, float multiplier) {
-        parallaxViewController.parallaxViewBy(view, multiplier);
-    }
+	@Override
+	public void parallaxViewBy(View view, float multiplier) {
+		parallaxViewController.parallaxViewBy(view, multiplier);
+	}
 
-    @Override
-    public void parallaxViewBy(View view, Transformer transformer, float multiplier) {
-        parallaxViewController.parallaxViewBy(view, transformer, multiplier);
-    }
+	@Override
+	public void parallaxViewBy(View view, Transformer transformer, float multiplier) {
+		parallaxViewController.parallaxViewBy(view, transformer, multiplier);
+	}
 
-    @Override
-    public void parallaxViewBackgroundBy(View view, Drawable drawable, float multiplier) {
-        parallaxViewController.parallaxViewBackgroundBy(view, drawable, multiplier);
-    }
+	@Override
+	public void parallaxViewBackgroundBy(View view, Drawable drawable, float multiplier) {
+		parallaxViewController.parallaxViewBackgroundBy(view, drawable, multiplier);
+	}
 
 }
