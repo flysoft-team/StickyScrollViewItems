@@ -6,6 +6,7 @@ import android.graphics.Rect;
 import android.os.Bundle;
 import android.os.Parcel;
 import android.os.Parcelable;
+import android.support.v4.view.ViewCompat;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.util.TypedValue;
@@ -515,7 +516,7 @@ public class ScrollViewEx extends FrameLayout {
 			}
 			if (mEdgeGlowTop != null
 					&& (!mEdgeGlowTop.isFinished() || !mEdgeGlowBottom.isFinished())) {
-				postInvalidateOnAnimation();
+				ViewCompat.postInvalidateOnAnimation(this);
 			}
 		}
 	}
@@ -719,7 +720,7 @@ public class ScrollViewEx extends FrameLayout {
 						}
 						if (mEdgeGlowTop != null
 								&& (!mEdgeGlowTop.isFinished() || !mEdgeGlowBottom.isFinished())) {
-							postInvalidateOnAnimation();
+							ViewCompat.postInvalidateOnAnimation(this);
 						}
 					}
 				}
@@ -727,6 +728,8 @@ public class ScrollViewEx extends FrameLayout {
 			case MotionEvent.ACTION_UP:
 				if (mIsBeingDragged) {
 					final VelocityTracker velocityTracker = mVelocityTracker;
+
+
 					velocityTracker.computeCurrentVelocity(1000, mMaximumVelocity);
 					int initialVelocity = (int) velocityTracker.getYVelocity(mActivePointerId);
 
@@ -958,7 +961,7 @@ public class ScrollViewEx extends FrameLayout {
 
 					if (foundFullyContainedFocusable) {
 						if (viewIsFullyContained && viewIsCloserToBoundary) {
-                            /*
+	                        /*
                              * We're dealing with only fully contained views, so
                              * it has to be closer to the boundary to beat our
                              * candidate
@@ -1196,7 +1199,7 @@ public class ScrollViewEx extends FrameLayout {
 			distance = Math.max(0, Math.min(scrollY + distance, maxY)) - scrollY;
 
 			mScroller.startScroll(getScrollX(), scrollY, 0, distance, duration);
-			postInvalidateOnAnimation();
+			ViewCompat.postInvalidateOnAnimation(this);
 		} else {
 			if (!mScroller.isFinished()) {
 				mScroller.abortAnimation();
@@ -1334,7 +1337,7 @@ public class ScrollViewEx extends FrameLayout {
 
 			if (!awakenScrollBars()) {
 				// Keep on drawing until the animation has finished.
-				postInvalidateOnAnimation();
+				ViewCompat.postInvalidateOnAnimation(this);
 			}
 		}
 	}
@@ -1592,7 +1595,7 @@ public class ScrollViewEx extends FrameLayout {
 			mScroller.fling(getScrollX(), getScrollY(), 0, velocityY, 0, 0, 0,
 					Math.max(0, bottom - height), 0, height / 2);
 
-			postInvalidateOnAnimation();
+			ViewCompat.postInvalidateOnAnimation(this);
 		}
 	}
 
@@ -1660,7 +1663,7 @@ public class ScrollViewEx extends FrameLayout {
 				canvas.translate(getPaddingLeft(), Math.min(0, scrollY));
 				mEdgeGlowTop.setSize(width, getHeight());
 				if (mEdgeGlowTop.draw(canvas)) {
-					postInvalidateOnAnimation();
+					ViewCompat.postInvalidateOnAnimation(this);
 				}
 				canvas.restoreToCount(restoreCount);
 			}
@@ -1674,7 +1677,7 @@ public class ScrollViewEx extends FrameLayout {
 				canvas.rotate(180, width, 0);
 				mEdgeGlowBottom.setSize(width, height);
 				if (mEdgeGlowBottom.draw(canvas)) {
-					postInvalidateOnAnimation();
+					ViewCompat.postInvalidateOnAnimation(this);
 				}
 				canvas.restoreToCount(restoreCount);
 			}
