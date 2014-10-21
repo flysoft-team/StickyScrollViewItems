@@ -36,6 +36,8 @@ public class StickyScrollView extends ScrollViewEx implements StickyMainContentS
 	 */
 	private static final int DEFAULT_SHADOW_HEIGHT = 10; // dp;
 
+	private OnSizeChangedListener onSizeChangedListener;
+
 	private ViewPropertyAnimator currentAnimator;
 	private final int animationDuration;
 	private View stickyView;
@@ -91,6 +93,10 @@ public class StickyScrollView extends ScrollViewEx implements StickyMainContentS
 
 		animationDuration = context.getResources().getInteger(android.R.integer.config_mediumAnimTime);
 
+	}
+
+	public void setOnSizeChangedListener(OnSizeChangedListener onSizeChangedListener) {
+		this.onSizeChangedListener = onSizeChangedListener;
 	}
 
 	public void setStickyViewId(int stickyViewId) {
@@ -166,7 +172,14 @@ public class StickyScrollView extends ScrollViewEx implements StickyMainContentS
 			}
 			savedState = null;
 		}
-//		notifyHierarchyChanged();
+	}
+
+	@Override
+	protected void onSizeChanged(int w, int h, int oldw, int oldh) {
+		super.onSizeChanged(w, h, oldw, oldh);
+		if (onSizeChangedListener != null) {
+			onSizeChangedListener.onSizeChanged(this);
+		}
 	}
 
 	private boolean isNeedSync(ViewGroup root) {
@@ -191,6 +204,13 @@ public class StickyScrollView extends ScrollViewEx implements StickyMainContentS
 			}
 		}
 		return false;
+	}
+
+	public void checkSync() {
+		boolean isNeedSync = isNeedSync(this);
+		if (isNeedSync) {
+			scrollTo(getScrollX(), getScrollRange());
+		}
 	}
 
 	@Override
