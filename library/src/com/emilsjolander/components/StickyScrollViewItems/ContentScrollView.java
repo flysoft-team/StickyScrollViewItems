@@ -8,7 +8,7 @@ import android.view.VelocityTracker;
 /**
  * Created by Shad on 20.10.14.
  */
-public class ContentScrollView extends ScrollViewEx implements StickyMainContentView {
+public class ContentScrollView extends ScrollViewEx implements StickyContentView {
 
 	public ContentScrollView(Context context) {
 		super(context);

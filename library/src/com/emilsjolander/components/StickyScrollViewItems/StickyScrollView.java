@@ -41,7 +41,7 @@ public class StickyScrollView extends ScrollViewEx implements StickyMainContentS
 	private View stickyView;
 	private boolean isStick;
 	private boolean isStickyHidden;
-	private StickyMainContentView mainContentView;
+	private StickyContentView mainContentView;
 	private StickyScrollListener stickyScrollListener;
 
 	private Queue<MotionEvent> interceptedEvents;
@@ -169,6 +169,30 @@ public class StickyScrollView extends ScrollViewEx implements StickyMainContentS
 //		notifyHierarchyChanged();
 	}
 
+	private boolean isNeedSync(ViewGroup root) {
+		if (root instanceof StickyContentView) {
+			if (root.canScrollVertically(0)) {
+				return true;
+			}
+		}
+		int count = root.getChildCount();
+		for (int i = 0; i < count; ++i) {
+			View view = root.getChildAt(i);
+			if (view instanceof StickyContentView) {
+				if (view.canScrollVertically(0)) {
+					return true;
+				}
+			}
+			if (view instanceof ViewGroup) {
+				boolean isNeed = isNeedSync((ViewGroup) view);
+				if (isNeed) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
 	@Override
 	public void setClipToPadding(boolean clipToPadding) {
 		super.setClipToPadding(clipToPadding);
@@ -216,7 +240,7 @@ public class StickyScrollView extends ScrollViewEx implements StickyMainContentS
 				(), location[1] + stickyView.getHeight());
 	}
 
-	private MotionEvent getRelativeEvent(StickyMainContentView v, MotionEvent original) {
+	private MotionEvent getRelativeEvent(StickyContentView v, MotionEvent original) {
 		MotionEvent relative = MotionEvent.obtain(original);
 		if (original.getX() == original.getRawX() && original.getY() == original.getRawY()) {
 			v.getLocationOnScreen(location);
@@ -272,7 +296,7 @@ public class StickyScrollView extends ScrollViewEx implements StickyMainContentS
 					float y = ev.getRawY();
 					float deltaY = startY - y;
 					if (deltaY > 0 && deltaY > touchSlop) {
-						StickyMainContentView scrollableView = canScroll(this, false, 0,
+						StickyContentView scrollableView = canScroll(this, false, 0,
 								(int) startXRelative,
 								(int) startYRelative);
 						if (scrollableView != null) {
@@ -281,7 +305,7 @@ public class StickyScrollView extends ScrollViewEx implements StickyMainContentS
 						}
 
 					} else if (deltaY < 0 && deltaY < -touchSlop) {
-						StickyMainContentView scrollableView = canScroll(this, false, -1, (int) startXRelative,
+						StickyContentView scrollableView = canScroll(this, false, -1, (int) startXRelative,
 								(int) startYRelative);
 						if (scrollableView != null) {
 							toTranslateToScrollable(scrollableView);
@@ -373,7 +397,7 @@ public class StickyScrollView extends ScrollViewEx implements StickyMainContentS
 		return handled;
 	}
 
-	protected StickyMainContentView canScroll(View v, boolean checkV, int direction, int x, int y) {
+	protected StickyContentView canScroll(View v, boolean checkV, int direction, int x, int y) {
 		if (v instanceof ViewGroup) {
 			final ViewGroup group = (ViewGroup) v;
 			final int scrollX = v.getScrollX();
@@ -386,7 +410,7 @@ public class StickyScrollView extends ScrollViewEx implements StickyMainContentS
 				if (x + scrollX >= child.getLeft() && x + scrollX < child.getRight() &&
 						y + scrollY >= child.getTop() && y + scrollY < child.getBottom()
 						) {
-					StickyMainContentView view = canScroll(child, true, direction, x + scrollX - child.getLeft(),
+					StickyContentView view = canScroll(child, true, direction, x + scrollX - child.getLeft(),
 							y + scrollY - child.getTop());
 					if (view != null) {
 						return view;
@@ -394,9 +418,9 @@ public class StickyScrollView extends ScrollViewEx implements StickyMainContentS
 				}
 			}
 		}
-		boolean canScroll = v instanceof StickyMainContentView && checkV && (direction == 0 || v
+		boolean canScroll = v instanceof StickyContentView && checkV && (direction == 0 || v
 				.canScrollVertically(direction));
-		return canScroll ? (StickyMainContentView) v : null;
+		return canScroll ? (StickyContentView) v : null;
 	}
 
 
@@ -409,7 +433,7 @@ public class StickyScrollView extends ScrollViewEx implements StickyMainContentS
 		} else {
 			if (t > oldt) {
 				if (!canScrollVertically(1)) {
-					StickyMainContentView scrollableView = canScroll(this, false, 1, getWidth() / 2, getHeight() / 2);
+					StickyContentView scrollableView = canScroll(this, false, 1, getWidth() / 2, getHeight() / 2);
 					if (scrollableView != null) {
 						toRedirectToScrollable(scrollableView);
 
@@ -472,7 +496,7 @@ public class StickyScrollView extends ScrollViewEx implements StickyMainContentS
 	private void doTheFlyingThing(int top, int oldTop) {
 		if (top > oldTop && touchesState != TouchesState.FLING_SCROLLABLE) {
 			if (!canScrollVertically(1)) {
-				StickyMainContentView scrollableView = canScroll(this, false, 1, getWidth() / 2, getHeight() / 2);
+				StickyContentView scrollableView = canScroll(this, false, 1, getWidth() / 2, getHeight() / 2);
 				if (scrollableView != null) {
 					stopFling();
 					toFlingScrollable(scrollableView, getCurrentFlingVelocity());
@@ -504,7 +528,7 @@ public class StickyScrollView extends ScrollViewEx implements StickyMainContentS
 		if (position <= oldPosition && position == 0 && ((t == -1 && oldT == -1) || (t > oldT && t == 0))) {
 			if (!canScrollVertically(1)) {
 				if (!v.canScrollVertically(-1)) {
-					toRedirectFromScrollable((StickyMainContentView) v);
+					toRedirectFromScrollable((StickyContentView) v);
 				}
 			}
 		}
@@ -557,9 +581,9 @@ public class StickyScrollView extends ScrollViewEx implements StickyMainContentS
 		stickyView = findViewById(stickyViewId);
 	}
 
-	private void findInnerScrollables(View v, List<StickyMainContentView> scrollables, boolean checkThis) {
-		if (checkThis && v instanceof StickyMainContentView) {
-			scrollables.add((StickyMainContentView) v);
+	private void findInnerScrollables(View v, List<StickyContentView> scrollables, boolean checkThis) {
+		if (checkThis && v instanceof StickyContentView) {
+			scrollables.add((StickyContentView) v);
 		} else if (v instanceof ViewGroup) {
 			ViewGroup viewGroup = (ViewGroup) v;
 			int childrenCount = viewGroup.getChildCount();
@@ -573,9 +597,9 @@ public class StickyScrollView extends ScrollViewEx implements StickyMainContentS
 	public void syncInnerScrollables() {
 		changeState(TouchesState.UNDEFINED, null);
 		if (canScrollVertically(1)) {
-			List<StickyMainContentView> scrollables = new ArrayList<>();
+			List<StickyContentView> scrollables = new ArrayList<>();
 			findInnerScrollables(this, scrollables, false);
-			for (StickyMainContentView scrollableView : scrollables) {
+			for (StickyContentView scrollableView : scrollables) {
 				scrollableView.scrollToTop();
 			}
 		}
@@ -588,7 +612,7 @@ public class StickyScrollView extends ScrollViewEx implements StickyMainContentS
 
 	private TouchesState touchesState = TouchesState.UNDEFINED;
 
-	private void changeState(TouchesState nState, StickyMainContentView scrollableView) {
+	private void changeState(TouchesState nState, StickyContentView scrollableView) {
 		if (mainContentView != null) {
 			mainContentView.setStickyMainContentScrollListener(null);
 		}
@@ -643,23 +667,23 @@ public class StickyScrollView extends ScrollViewEx implements StickyMainContentS
 
 	}
 
-	private void toFlingScrollable(StickyMainContentView scrollableView, float velocity) {
+	private void toFlingScrollable(StickyContentView scrollableView, float velocity) {
 		changeState(TouchesState.FLING_SCROLLABLE, scrollableView);
 		scrollableView.startFling((int) -velocity);
 	}
 
-	private void toTranslateToScrollable(StickyMainContentView scrollableView) {
+	private void toTranslateToScrollable(StickyContentView scrollableView) {
 		changeState(TouchesState.TRANSLATE_TO_SCROLLABLE, scrollableView);
 	}
 
-	private void toRedirectToScrollable(StickyMainContentView scrollableView) {
+	private void toRedirectToScrollable(StickyContentView scrollableView) {
 		changeState(TouchesState.REDIRECT_TO_SCROLLABLE, scrollableView);
 		velocityTracker = snatchVelocityTracker();
 		needToHandleEvent = MotionEvent.obtain(lastMotionEvent);
 		endDrag();
 	}
 
-	private void toRedirectFromScrollable(StickyMainContentView scrollableView) {
+	private void toRedirectFromScrollable(StickyContentView scrollableView) {
 		changeState(TouchesState.REDIRECT_FROM_SCROLLABLE, scrollableView);
 		velocityTracker = scrollableView.getVelocityTracker();
 		needToHandleEvent = MotionEvent.obtain(lastMotionEvent);
@@ -679,7 +703,7 @@ public class StickyScrollView extends ScrollViewEx implements StickyMainContentS
 	protected Parcelable onSaveInstanceState() {
 		Parcelable superState = super.onSaveInstanceState();
 		SavedState ss = new SavedState(superState);
-		ss.scrollToBottom = !canScrollVertically(1);
+		ss.scrollToBottom = isNeedSync(this);
 		return ss;
 	}
 

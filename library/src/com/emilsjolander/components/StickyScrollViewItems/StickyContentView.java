@@ -6,7 +6,7 @@ import android.view.VelocityTracker;
 /**
  * Created by Shad on 28.07.14.
  */
-public interface StickyMainContentView {
+public interface StickyContentView {
 
 	public void setStickyMainContentScrollListener(StickyMainContentScrollListener stickyMainContentScrollListener);
 
