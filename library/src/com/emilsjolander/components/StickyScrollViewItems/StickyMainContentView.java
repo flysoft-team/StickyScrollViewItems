@@ -14,8 +14,8 @@ public interface StickyMainContentView {
 
 	public void scrollToTop();
 
-	public void startScrollByMotionEvents(VelocityTracker velocityTracker, MotionEvent prevEvent,
-	                                      MotionEvent event);
+	public void startScrollByEvents(VelocityTracker velocityTracker, MotionEvent prevEvent,
+	                                MotionEvent event);
 
 	public void startFling(int velocity);
 

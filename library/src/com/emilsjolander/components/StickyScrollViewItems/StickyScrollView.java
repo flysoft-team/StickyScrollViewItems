@@ -13,7 +13,6 @@ import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 import android.view.ViewPropertyAnimator;
-import android.widget.AdapterView;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -346,7 +345,7 @@ public class StickyScrollView extends ScrollViewEx implements StickyMainContentS
 				if (needToHandleEvent != null) {
 //					mainContentView.getListView().onTouchEvent(
 //							needToHandleEvent);
-					mainContentView.startScrollByMotionEvents(velocityTracker,
+					mainContentView.startScrollByEvents(velocityTracker,
 							needToHandleEvent, event);
 					needToHandleEvent.recycle();
 					needToHandleEvent = null;
@@ -475,10 +474,8 @@ public class StickyScrollView extends ScrollViewEx implements StickyMainContentS
 			if (!canScrollVertically(1)) {
 				StickyMainContentView scrollableView = canScroll(this, false, 1, getWidth() / 2, getHeight() / 2);
 				if (scrollableView != null) {
-					if (scrollableView instanceof AdapterView) {
-						stopFling();
-						toFlingScrollable(scrollableView, getCurrentFlingVelocity());
-					}
+					stopFling();
+					toFlingScrollable(scrollableView, getCurrentFlingVelocity());
 				}
 			}
 		}
@@ -487,10 +484,12 @@ public class StickyScrollView extends ScrollViewEx implements StickyMainContentS
 
 	@Override
 	public void onScrollableFling(View v, int position, int oldPosition, int t, int oldT, float velocity) {
-		if (position <= oldPosition && position == 0 && t > oldT && t == 0 && touchesState != TouchesState
-				.FLING_THIS) {
+		if (position <= oldPosition && position == 0 && ((t == -1 && oldT == -1) || (t > oldT && t == 0)) &&
+				touchesState != TouchesState.FLING_THIS) {
 			if (!canScrollVertically(1)) {
+
 				if (!v.canScrollVertically(-1)) {
+					touchesState = TouchesState.FLING_SCROLLABLE;
 					toFlingThis(velocity);
 				}
 			}
@@ -502,7 +501,7 @@ public class StickyScrollView extends ScrollViewEx implements StickyMainContentS
 
 	@Override
 	public void onScrollableScroll(View v, int position, int oldPosition, int t, int oldT) {
-		if (position <= oldPosition && position == 0 && t > oldT && t == 0) {
+		if (position <= oldPosition && position == 0 && ((t == -1 && oldT == -1) || (t > oldT && t == 0))) {
 			if (!canScrollVertically(1)) {
 				if (!v.canScrollVertically(-1)) {
 					toRedirectFromScrollable((StickyMainContentView) v);
@@ -572,6 +571,7 @@ public class StickyScrollView extends ScrollViewEx implements StickyMainContentS
 	}
 
 	public void syncInnerScrollables() {
+		changeState(TouchesState.UNDEFINED, null);
 		if (canScrollVertically(1)) {
 			List<StickyMainContentView> scrollables = new ArrayList<>();
 			findInnerScrollables(this, scrollables, false);

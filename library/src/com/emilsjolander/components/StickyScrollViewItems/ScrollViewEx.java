@@ -68,12 +68,12 @@ public class ScrollViewEx extends FrameLayout {
 	 * not the same as 'is being flinged', which can be checked by
 	 * mScroller.isFinished() (flinging begins when the user lifts his finger).
 	 */
-	private boolean mIsBeingDragged = false;
+	protected boolean mIsBeingDragged = false;
 
 	/**
 	 * Determines speed during touch scrolling
 	 */
-	private VelocityTracker mVelocityTracker;
+	protected VelocityTracker mVelocityTracker;
 
 	/**
 	 * When set to true, the scroll view measure its child to make it fill the currently
@@ -474,6 +474,7 @@ public class ScrollViewEx extends FrameLayout {
 		mActivePointerId = prevEvent.getPointerId(0);
 
 		mIsBeingDragged = true;
+		onScrollStateChanged(true);
 
 		final int y = (int) event.getY(mActivePointerId);
 
@@ -675,6 +676,7 @@ public class ScrollViewEx extends FrameLayout {
 						parent.requestDisallowInterceptTouchEvent(true);
 					}
 					mIsBeingDragged = true;
+					onScrollStateChanged(true);
 					if (deltaY > 0) {
 						deltaY -= mTouchSlop;
 					} else {
@@ -771,6 +773,10 @@ public class ScrollViewEx extends FrameLayout {
 				mVelocityTracker.clear();
 			}
 		}
+	}
+
+	protected void onScrollStateChanged(boolean isDrag) {
+
 	}
 
 	@Override
@@ -933,7 +939,7 @@ public class ScrollViewEx extends FrameLayout {
 
 			if (top < viewBottom && viewTop < bottom) {
 			    /*
-		         * the focusable is in the target area, it is a candidate for
+			     * the focusable is in the target area, it is a candidate for
                  * focusing
                  */
 
@@ -941,7 +947,7 @@ public class ScrollViewEx extends FrameLayout {
 						(viewBottom < bottom);
 
 				if (focusCandidate == null) {
-                    /* No candidate, take this one */
+				    /* No candidate, take this one */
 					focusCandidate = view;
 					foundFullyContainedFocusable = viewIsFullyContained;
 				} else {
@@ -1582,7 +1588,7 @@ public class ScrollViewEx extends FrameLayout {
 		if (getChildCount() > 0) {
 			int height = getHeight() - getPaddingBottom() - getPaddingTop();
 			int bottom = getChildAt(0).getHeight();
-
+			onScrollStateChanged(false);
 			mScroller.fling(getScrollX(), getScrollY(), 0, velocityY, 0, 0, 0,
 					Math.max(0, bottom - height), 0, height / 2);
 
