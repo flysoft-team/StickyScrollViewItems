@@ -25,6 +25,6 @@ public interface StickyContentView {
 
 	public boolean onTranslatedTouchEvent(MotionEvent event);
 
-	public VelocityTracker getVelocityTracker();
+	public VelocityTracker snatchVelocityTracker();
 
 }

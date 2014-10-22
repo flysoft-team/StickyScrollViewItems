@@ -705,7 +705,7 @@ public class StickyScrollView extends ScrollViewEx implements StickyMainContentS
 
 	private void toRedirectFromScrollable(StickyContentView scrollableView) {
 		changeState(TouchesState.REDIRECT_FROM_SCROLLABLE, scrollableView);
-		velocityTracker = scrollableView.getVelocityTracker();
+		velocityTracker = scrollableView.snatchVelocityTracker();
 		needToHandleEvent = MotionEvent.obtain(lastMotionEvent);
 		scrollableView.stopScroll();
 	}

@@ -73,8 +73,4 @@ public class ContentScrollView extends ScrollViewEx implements StickyContentView
 		return onTouchEvent(event);
 	}
 
-	@Override
-	public VelocityTracker getVelocityTracker() {
-		return mVelocityTracker;
-	}
 }

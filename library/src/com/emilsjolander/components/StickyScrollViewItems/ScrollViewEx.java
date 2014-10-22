@@ -435,7 +435,7 @@ public class ScrollViewEx extends FrameLayout {
 		super.requestDisallowInterceptTouchEvent(disallowIntercept);
 	}
 
-	protected VelocityTracker snatchVelocityTracker() {
+	public VelocityTracker snatchVelocityTracker() {
 		VelocityTracker snatchTracker = mVelocityTracker;
 		mVelocityTracker = null;
 		return snatchTracker;
@@ -961,7 +961,7 @@ public class ScrollViewEx extends FrameLayout {
 
 					if (foundFullyContainedFocusable) {
 						if (viewIsFullyContained && viewIsCloserToBoundary) {
-	                        /*
+		                    /*
                              * We're dealing with only fully contained views, so
                              * it has to be closer to the boundary to beat our
                              * candidate
