@@ -178,7 +178,7 @@ public class StickyScrollView extends ScrollViewEx implements StickyMainContentS
 	protected void onSizeChanged(int w, int h, int oldw, int oldh) {
 		super.onSizeChanged(w, h, oldw, oldh);
 		if (onSizeChangedListener != null) {
-			onSizeChangedListener.onSizeChanged(this);
+			onSizeChangedListener.onSizeChanged(this, w, h);
 		}
 	}
 
