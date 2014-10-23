@@ -60,6 +60,7 @@ public class StickyScrollView extends ScrollViewEx implements StickyMainContentS
 	private MotionEvent lastMotionEvent;
 	private MotionEvent needToHandleEvent;
 	private VelocityTracker velocityTracker;
+	private int activePointerId;
 
 	private float startY;
 	private float startX;
@@ -390,10 +391,11 @@ public class StickyScrollView extends ScrollViewEx implements StickyMainContentS
 //					mainContentView.getListView().onTouchEvent(
 //							needToHandleEvent);
 					mainContentView.startScrollByEvents(velocityTracker,
-							needToHandleEvent, event);
+							needToHandleEvent, event, getActivePointerId());
 					needToHandleEvent.recycle();
 					needToHandleEvent = null;
 					velocityTracker = null;
+					activePointerId = -1;
 					handled = true;
 					break;
 				}
@@ -403,10 +405,11 @@ public class StickyScrollView extends ScrollViewEx implements StickyMainContentS
 			case REDIRECT_FROM_SCROLLABLE: {
 				if (needToHandleEvent != null) {
 //					super.onTouchEvent(needToHandleEvent);
-					startScrollByMotionEvents(velocityTracker, needToHandleEvent, event);
+					startScrollByMotionEvents(velocityTracker, needToHandleEvent, event, activePointerId);
 					needToHandleEvent.recycle();
 					needToHandleEvent = null;
 					velocityTracker = null;
+					activePointerId = -1;
 					handled = true;
 					break;
 				}
@@ -699,6 +702,7 @@ public class StickyScrollView extends ScrollViewEx implements StickyMainContentS
 	private void toRedirectToScrollable(StickyContentView scrollableView) {
 		changeState(TouchesState.REDIRECT_TO_SCROLLABLE, scrollableView);
 		velocityTracker = snatchVelocityTracker();
+		activePointerId = getActivePointerId();
 		needToHandleEvent = MotionEvent.obtain(lastMotionEvent);
 		endDrag();
 	}
@@ -706,6 +710,7 @@ public class StickyScrollView extends ScrollViewEx implements StickyMainContentS
 	private void toRedirectFromScrollable(StickyContentView scrollableView) {
 		changeState(TouchesState.REDIRECT_FROM_SCROLLABLE, scrollableView);
 		velocityTracker = scrollableView.snatchVelocityTracker();
+		activePointerId = scrollableView.getActivePointerId();
 		needToHandleEvent = MotionEvent.obtain(lastMotionEvent);
 		scrollableView.stopScroll();
 	}

@@ -15,7 +15,7 @@ public interface StickyContentView {
 	public void scrollToTop();
 
 	public void startScrollByEvents(VelocityTracker velocityTracker, MotionEvent prevEvent,
-	                                MotionEvent event);
+	                                MotionEvent event, int pointerId);
 
 	public void startFling(int velocity);
 
@@ -26,5 +26,7 @@ public interface StickyContentView {
 	public boolean onTranslatedTouchEvent(MotionEvent event);
 
 	public VelocityTracker snatchVelocityTracker();
+
+	public int getActivePointerId();
 
 }

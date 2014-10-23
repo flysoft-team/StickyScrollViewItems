@@ -49,8 +49,9 @@ public class ContentScrollView extends ScrollViewEx implements StickyContentView
 	}
 
 	@Override
-	public void startScrollByEvents(VelocityTracker velocityTracker, MotionEvent prevEvent, MotionEvent event) {
-		startScrollByMotionEvents(velocityTracker, prevEvent, event);
+	public void startScrollByEvents(VelocityTracker velocityTracker, MotionEvent prevEvent,
+	                                MotionEvent event, int pointerId) {
+		startScrollByMotionEvents(velocityTracker, prevEvent, event, pointerId);
 	}
 
 	@Override

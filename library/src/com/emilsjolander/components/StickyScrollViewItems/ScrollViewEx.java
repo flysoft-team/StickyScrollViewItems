@@ -441,14 +441,19 @@ public class ScrollViewEx extends FrameLayout {
 		return snatchTracker;
 	}
 
+	public int getActivePointerId() {
+		return mActivePointerId;
+	}
+
 	protected void startScrollByMotionEvents(VelocityTracker velocityTracker, MotionEvent prevEvent,
-	                                         MotionEvent event) {
+	                                         MotionEvent event, int pointerId) {
 
 		if (!mScroller.isFinished()) {
 			mScroller.forceFinished(true);
 		}
 
-		if (event.getActionMasked() == MotionEvent.ACTION_UP || event.getActionMasked() == MotionEvent.ACTION_UP) {
+		if (event.getActionMasked() == MotionEvent.ACTION_UP || event.getActionMasked() == MotionEvent
+				.ACTION_UP || pointerId == INVALID_POINTER) {
 			velocityTracker.addMovement(event);
 			velocityTracker.computeCurrentVelocity(1000, mMaximumVelocity);
 			int initialVelocity = (int) velocityTracker.getYVelocity(mActivePointerId);
@@ -463,6 +468,38 @@ public class ScrollViewEx extends FrameLayout {
 
 		endDrag();
 
+
+		// Remember where the motion event started
+
+		mActivePointerId = pointerId;
+		int prevPointerIndex = prevEvent.findPointerIndex(pointerId);
+		if (prevPointerIndex >= 0) {
+			mLastMotionY = (int) prevEvent.getY(prevPointerIndex);
+		} else {
+			mLastMotionY = (int) prevEvent.getY();
+		}
+
+
+		int action = event.getActionMasked();
+		if (action == MotionEvent.ACTION_POINTER_DOWN) {
+			final int index = event.getActionIndex();
+			mLastMotionY = (int) event.getY(index);
+			mActivePointerId = event.getPointerId(index);
+		} else if (action == MotionEvent.ACTION_POINTER_UP) {
+			onSecondaryPointerUp(event);
+			prevPointerIndex = event.findPointerIndex(mActivePointerId);
+			if (prevPointerIndex >= 0) {
+				mLastMotionY = (int) event.getY(prevPointerIndex);
+			}
+		}
+
+
+		int pointerIndex = event.findPointerIndex(mActivePointerId);
+		if (pointerIndex == INVALID_POINTER) {
+			mActivePointerId = event.getPointerId(0);
+			pointerIndex = 0;
+		}
+
 		if (velocityTracker != null) {
 			recycleVelocityTracker();
 			mVelocityTracker = velocityTracker;
@@ -470,14 +507,10 @@ public class ScrollViewEx extends FrameLayout {
 			initOrResetVelocityTracker();
 		}
 
-		// Remember where the motion event started
-		mLastMotionY = (int) prevEvent.getY();
-		mActivePointerId = prevEvent.getPointerId(0);
-
 		mIsBeingDragged = true;
 		onScrollStateChanged(true);
 
-		final int y = (int) event.getY(mActivePointerId);
+		final int y = (int) event.getY(pointerIndex);
 
 		// Scroll to follow the motion event
 
@@ -961,8 +994,8 @@ public class ScrollViewEx extends FrameLayout {
 
 					if (foundFullyContainedFocusable) {
 						if (viewIsFullyContained && viewIsCloserToBoundary) {
-		                    /*
-                             * We're dealing with only fully contained views, so
+						    /*
+						     * We're dealing with only fully contained views, so
                              * it has to be closer to the boundary to beat our
                              * candidate
                              */
@@ -970,7 +1003,7 @@ public class ScrollViewEx extends FrameLayout {
 						}
 					} else {
 						if (viewIsFullyContained) {
-                            /* Any fully contained view beats a partially contained view */
+						    /* Any fully contained view beats a partially contained view */
 							focusCandidate = view;
 							foundFullyContainedFocusable = true;
 						} else if (viewIsCloserToBoundary) {
