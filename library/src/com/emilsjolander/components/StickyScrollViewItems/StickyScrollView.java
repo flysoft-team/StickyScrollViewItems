@@ -388,10 +388,8 @@ public class StickyScrollView extends ScrollViewEx implements StickyMainContentS
 			}
 			case REDIRECT_TO_SCROLLABLE: {
 				if (needToHandleEvent != null) {
-//					mainContentView.getListView().onTouchEvent(
-//							needToHandleEvent);
 					mainContentView.startScrollByEvents(velocityTracker,
-							needToHandleEvent, event, getActivePointerId());
+							needToHandleEvent, event, activePointerId);
 					needToHandleEvent.recycle();
 					needToHandleEvent = null;
 					velocityTracker = null;
@@ -404,7 +402,6 @@ public class StickyScrollView extends ScrollViewEx implements StickyMainContentS
 			}
 			case REDIRECT_FROM_SCROLLABLE: {
 				if (needToHandleEvent != null) {
-//					super.onTouchEvent(needToHandleEvent);
 					startScrollByMotionEvents(velocityTracker, needToHandleEvent, event, activePointerId);
 					needToHandleEvent.recycle();
 					needToHandleEvent = null;
@@ -548,7 +545,8 @@ public class StickyScrollView extends ScrollViewEx implements StickyMainContentS
 
 	@Override
 	public void onScrollableScroll(View v, int position, int oldPosition, int t, int oldT) {
-		if (position <= oldPosition && position == 0 && ((t == -1 && oldT == -1) || (t > oldT && t == 0))) {
+		if (touchesState != TouchesState.REDIRECT_FROM_SCROLLABLE && position <= oldPosition && position == 0
+				&& ((t == -1 && oldT == -1) || (t > oldT && t == 0))) {
 			if (!canScrollVertically(1)) {
 				if (!v.canScrollVertically(-1)) {
 					toRedirectFromScrollable((StickyContentView) v);
