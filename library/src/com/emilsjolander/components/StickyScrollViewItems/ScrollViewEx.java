@@ -454,6 +454,9 @@ public class ScrollViewEx extends FrameLayout {
 
 		if (event.getActionMasked() == MotionEvent.ACTION_UP || event.getActionMasked() == MotionEvent
 				.ACTION_UP || pointerId == INVALID_POINTER) {
+			if (velocityTracker == null) {
+				return;
+			}
 			velocityTracker.addMovement(event);
 			velocityTracker.computeCurrentVelocity(1000, mMaximumVelocity);
 			int initialVelocity = (int) velocityTracker.getYVelocity(mActivePointerId);
@@ -1007,7 +1010,7 @@ public class ScrollViewEx extends FrameLayout {
 							focusCandidate = view;
 							foundFullyContainedFocusable = true;
 						} else if (viewIsCloserToBoundary) {
-                            /*
+	                        /*
                              * Partially contained view beats another partially
                              * contained view if it's closer
                              */
