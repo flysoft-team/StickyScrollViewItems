@@ -5,6 +5,7 @@
 		<attr name="stickOffsetY" format="dimension"/>
 		<attr name="stuckShadowDrawable" format="reference"/>
 		<attr name="stickyView" format="reference"/>
+		<attr name="stickyModeEnabled" format="reference|boolean"/>
 	</declare-styleable>
 
 </resources>

@@ -41,6 +41,9 @@ public class StickyScrollView extends ScrollViewEx implements StickyMainContentS
 	private ViewPropertyAnimator currentAnimator;
 	private final int animationDuration;
 	private View stickyView;
+
+	private final boolean stickyModeEnabled;
+
 	private boolean isStick;
 	private boolean isStickyHidden;
 	private StickyContentView mainContentView;
@@ -89,8 +92,10 @@ public class StickyScrollView extends ScrollViewEx implements StickyMainContentS
 				R.styleable.StickyScrollView_stickOffsetY, 0);
 
 		stickyViewId = a.getResourceId(R.styleable.StickyScrollView_stickyView, 0);
+		stickyModeEnabled = a.getBoolean(R.styleable.StickyScrollView_stickyModeEnabled, true);
 
 		a.recycle();
+
 
 		animationDuration = context.getResources().getInteger(android.R.integer.config_mediumAnimTime);
 
@@ -256,6 +261,9 @@ public class StickyScrollView extends ScrollViewEx implements StickyMainContentS
 	private Rect locationRect = new Rect();
 
 	private void updateStickyOnScreenLocationRect() {
+		if (stickyView == null || !stickyModeEnabled) {
+			return;
+		}
 		stickyView.getLocationOnScreen(location);
 		locationRect.set(location[0], location[1], location[0] + stickyView.getWidth
 				(), location[1] + stickyView.getHeight());
@@ -284,7 +292,7 @@ public class StickyScrollView extends ScrollViewEx implements StickyMainContentS
 		if (touchesState == TouchesState.FLING_SCROLLABLE || touchesState == TouchesState.FLING_THIS) {
 			toUndefined();
 		}
-		if (isStick && !isStickyHidden) {
+		if (stickyModeEnabled && isStick && !isStickyHidden) {
 			final int action = ev.getActionMasked();
 			if (action == MotionEvent.ACTION_DOWN) {
 				updateStickyOnScreenLocationRect();
@@ -495,6 +503,9 @@ public class StickyScrollView extends ScrollViewEx implements StickyMainContentS
 	}
 
 	private void doTheStickyThing() {
+		if (!stickyModeEnabled || stickyView == null) {
+			return;
+		}
 		int viewTop = getTopForViewRelativeOnlyChild(stickyView) - getScrollY() + (clippingToPadding ? 0 :
 				getPaddingTop());
 		if (viewTop <= stickOffsetY) {
@@ -560,6 +571,9 @@ public class StickyScrollView extends ScrollViewEx implements StickyMainContentS
 	}
 
 	private void stopStickyShowAnimation() {
+		if (!stickyModeEnabled || stickyView == null) {
+			return;
+		}
 		isStickyHidden = false;
 		if (currentAnimator != null) {
 			currentAnimator.cancel();
@@ -572,6 +586,9 @@ public class StickyScrollView extends ScrollViewEx implements StickyMainContentS
 	}
 
 	private void startStick() {
+		if (!stickyModeEnabled || stickyView == null) {
+			return;
+		}
 		isStick = true;
 		stopStickyShowAnimation();
 		stickyView.bringToFront();
@@ -580,6 +597,9 @@ public class StickyScrollView extends ScrollViewEx implements StickyMainContentS
 	}
 
 	private void stopStick() {
+		if (!stickyModeEnabled || stickyView == null) {
+			return;
+		}
 		stopStickyShowAnimation();
 		isStick = false;
 	}
