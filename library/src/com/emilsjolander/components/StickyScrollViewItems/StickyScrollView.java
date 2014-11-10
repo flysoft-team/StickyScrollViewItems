@@ -34,7 +34,6 @@ public class StickyScrollView extends ScrollViewEx implements StickyMainContentS
 	/**
 	 * Default height of the shadow peeking out below the stuck view.
 	 */
-	private static final int DEFAULT_SHADOW_HEIGHT = 10; // dp;
 
 	private OnSizeChangedListener onSizeChangedListener;
 
@@ -101,6 +100,32 @@ public class StickyScrollView extends ScrollViewEx implements StickyMainContentS
 
 	}
 
+	public void setup() {
+		interceptedEvents = new LinkedList<>();
+		final ViewConfiguration configuration = ViewConfiguration.get(getContext());
+		touchSlop = configuration.getScaledTouchSlop();
+
+		parallaxViewController = ParallaxViewController.wrap(this);
+	}
+
+	@Override
+	protected void onDetachedFromWindow() {
+		super.onDetachedFromWindow();
+		if (lastMotionEvent != null) {
+			lastMotionEvent.recycle();
+			lastMotionEvent = null;
+		}
+		if (needToHandleEvent != null) {
+			needToHandleEvent.recycle();
+			needToHandleEvent = null;
+		}
+		clearEvents(interceptedEvents);
+		if (velocityTracker != null) {
+			velocityTracker.recycle();
+			velocityTracker = null;
+		}
+	}
+
 	public void setOnSizeChangedListener(OnSizeChangedListener onSizeChangedListener) {
 		this.onSizeChangedListener = onSizeChangedListener;
 	}
@@ -112,14 +137,6 @@ public class StickyScrollView extends ScrollViewEx implements StickyMainContentS
 
 	public void setStickyOffsetY(int stickOffsetY) {
 		this.stickOffsetY = stickOffsetY;
-	}
-
-	public void setup() {
-		interceptedEvents = new LinkedList<>();
-		final ViewConfiguration configuration = ViewConfiguration.get(getContext());
-		touchSlop = configuration.getScaledTouchSlop();
-
-		parallaxViewController = ParallaxViewController.wrap(this);
 	}
 
 	public void setStickyScrollListener(StickyScrollListener stickyScrollListener) {
@@ -721,7 +738,7 @@ public class StickyScrollView extends ScrollViewEx implements StickyMainContentS
 		changeState(TouchesState.REDIRECT_TO_SCROLLABLE, scrollableView);
 		velocityTracker = snatchVelocityTracker();
 		activePointerId = getActivePointerId();
-		needToHandleEvent = MotionEvent.obtain(lastMotionEvent);
+		needToHandleEvent = lastMotionEvent == null ? null : MotionEvent.obtain(lastMotionEvent);
 		endDrag();
 	}
 
@@ -729,7 +746,7 @@ public class StickyScrollView extends ScrollViewEx implements StickyMainContentS
 		changeState(TouchesState.REDIRECT_FROM_SCROLLABLE, scrollableView);
 		velocityTracker = scrollableView.snatchVelocityTracker();
 		activePointerId = scrollableView.getActivePointerId();
-		needToHandleEvent = MotionEvent.obtain(lastMotionEvent);
+		needToHandleEvent = lastMotionEvent == null ? null : MotionEvent.obtain(lastMotionEvent);
 		scrollableView.stopScroll();
 	}
 
