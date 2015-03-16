@@ -3,9 +3,11 @@ package com.emilsjolander.components.StickyScrollViewItems;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Rect;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Parcel;
 import android.os.Parcelable;
+import android.support.annotation.NonNull;
 import android.support.v4.view.ViewCompat;
 import android.util.AttributeSet;
 import android.util.Log;
@@ -920,15 +922,17 @@ public class ScrollViewEx extends FrameLayout {
 	}
 
 	@Override
-	public void onInitializeAccessibilityEvent(AccessibilityEvent event) {
+	public void onInitializeAccessibilityEvent(@NonNull AccessibilityEvent event) {
 		super.onInitializeAccessibilityEvent(event);
 		event.setClassName(ScrollViewEx.class.getName());
 		final boolean scrollable = getScrollRange() > 0;
 		event.setScrollable(scrollable);
 		event.setScrollX(getScrollX());
 		event.setScrollY(getScrollY());
-		event.setMaxScrollX(getScrollX());
-		event.setMaxScrollY(getScrollRange());
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH_MR1) {
+			event.setMaxScrollX(getScrollX());
+			event.setMaxScrollY(getScrollRange());
+		}
 	}
 
 	protected int getScrollRange() {
