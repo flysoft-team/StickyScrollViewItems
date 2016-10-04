@@ -1,3 +1,8 @@
+buildscript {
+	repositories {
+		maven { url "https://jitpack.io" }
+	}
+}
 apply plugin: 'com.android.library'
 
 android {
@@ -23,5 +28,5 @@ android {
 }
 
 dependencies {
-	compile project(':paralloid')
+	compile 'com.github.ifunny.Paralloid:Paralloid:1.0.0'
 }
