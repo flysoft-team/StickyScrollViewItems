@@ -1,2 +1,2 @@
-include 'library'
-include 'sample'
+include ':StickyScrollViewItems'
+project(':StickyScrollViewItems').projectDir = new File('library')
